@@ -35,8 +35,8 @@
         .bio-greeting{font-size:36px;font-weight:400;letter-spacing:-.032em;line-height:1.2em;color:var(--text);margin-bottom:24px;text-wrap:balance}
         .bio p{font-size:17px;font-weight:400;letter-spacing:-.016em;line-height:1.38em;color:var(--text-body);margin-bottom:20px;max-width:40ch;text-wrap:pretty}
         .bio p:last-child{margin-bottom:0}
-        .bio a{color:var(--accent);text-decoration:underline;text-decoration-color:rgba(0,0,0,.35);text-decoration-thickness:1px;text-underline-offset:3px;transition:text-decoration-color .15s ease}
-        .bio a:hover{text-decoration-color:var(--accent)}
+        .bio a{color:var(--accent);text-decoration:underline;text-decoration-color:currentColor;text-decoration-thickness:1px;text-underline-offset:3px;transition:color .15s ease}
+        .bio a:hover{color:rgba(0,0,0,.5)}
         .green{color:inherit}
         .accordions{display:flex;flex-direction:column;margin-top:20px;border-top:1px solid var(--border);border-bottom:1px solid var(--border)}
         .accordion+.accordion{border-top:1px solid var(--border)}
@@ -47,8 +47,8 @@
         .accordion-content{overflow:hidden;max-height:0;transition:max-height .4s cubic-bezier(.22,1,.36,1),opacity .3s ease;opacity:0}
         .accordion.open .accordion-content{opacity:1}
         .accordion-inner{padding-bottom:20px;color:var(--text-body);font-size:14px;line-height:1.42em;font-weight:400;letter-spacing:-.012em}
-        .accordion-inner a{color:#000;text-decoration:underline;text-decoration-color:rgba(0,0,0,.35);text-decoration-thickness:1px;text-underline-offset:3px;transition:text-decoration-color .2s ease}
-        .accordion-inner a:hover{color:#000;text-decoration-color:#000}
+        .accordion-inner a{color:#000;text-decoration:underline;text-decoration-color:currentColor;text-decoration-thickness:1px;text-underline-offset:3px;transition:color .2s ease}
+        .accordion-inner a:hover{color:rgba(0,0,0,.5)}
         .accordion-inner p+p{margin-top:12px}
         .tag-list{display:grid;grid-template-columns:1fr 1fr;gap:4px 32px}
         .tag{display:block;padding:0;background:none;border:none;border-radius:0;font-size:14px;font-weight:400;color:var(--text-body);letter-spacing:-.012em;line-height:1.42em}
@@ -115,13 +115,13 @@
     <div class="page-wrapper">
     <main class="page">
         <div class="bio">
-            <h1 class="bio-greeting fade-up delay-2">Hey there, I'm Justin. I'm a lifelong creative problem solver, currently working at <a href="https://www.itssuppertime.com/" target="_blank" rel="noopener">Supper</a><span class="green" aria-hidden="true">.</span></h1>
+            <h1 class="bio-greeting fade-up delay-2">Hey there, I'm Justin. I'm a lifelong creative problem solver, currently working at Supper<span class="green" aria-hidden="true">.</span></h1>
 
             <p class="fade-up delay-3">In the past, I've been called a designer and filmmaker. Now, my world revolves around digital marketing and building new possibilities with artificial intelligence.</p>
 
-            <p class="fade-up delay-4">In my free time, I enjoy obsessing over music, tending to <a href="https://www.instagram.com/justinm/" target="_blank" rel="noopener">my garden</a><span class="green" aria-hidden="true">,</span> and spending time outdoors.</p>
+            <p class="fade-up delay-4">In my free time, I enjoy obsessing over music, tending to my garden<span class="green" aria-hidden="true">,</span> and spending time outdoors.</p>
 
-            <p class="fade-up delay-5">One thing I'm incredibly proud of is achieving over 20&nbsp;million lifetime views <a href="https://www.youtube.com/@shufflequest" target="_blank" rel="noopener">on YouTube</a><span class="green" aria-hidden="true">.</span></p>
+            <p class="fade-up delay-5">One thing I'm incredibly proud of is achieving over 20&nbsp;million lifetime views on YouTube<span class="green" aria-hidden="true">.</span></p>
         </div>
 
         <section class="accordions fade-up delay-6">
@@ -133,12 +133,11 @@
                 <div class="accordion-content" id="accordion-mind" role="region" aria-label="What's on my mind">
                     <div class="accordion-inner">
                         <ul class="thoughts-list">
-                            <li>The companies that will move fastest in the next ten years with AI are the ones with defined, documented processes.</li>
-                            <li>The best, and often most effective, advertising doesn't look like advertising. It looks like something posted on your friend's personal profile.</li>
-                            <li>Carnivorous plants like <a href="https://tomscarnivores.com/resources/tropical-pitcher-plants-care-for-monkey-cups/" target="_blank" rel="noopener noreferrer">Nepenthes</a> are some of the most fascinating organisms on the planet. Currently, I'm trying to grow one of my own.</li>
+                            <li>Currently tinkering with Hermes, building automations and context-capture systems to make tech more intentional in my life.</li>
+                            <li>All invasive plants are non-native. But not all non-native are invasive.</li>
+                            <li>Picked up the XTEINK X4. E-Ink is magic. Finished On the Road recently and it rules.</li>
                             <li>We are living through the best time in history to be making things online.</li>
-                            <li><a href="https://open.spotify.com/album/2DX3rjhortqMx72jCdakYu?si=LXUyrd5NScGpu8DaDTAG6g" target="_blank" rel="noopener noreferrer">This album</a> is one of the best I've heard in awhile.</li>
-                            <li>In a world where AI can fabricate anything, rawness and authenticity become the scarcest resources. The creators who will win the day will make you feel like you actually know them over anything else.</li>
+                            <li>2026 gardening expense tracker: $198.77</li>
                         </ul>
                     </div>
                 </div>
@@ -185,7 +184,7 @@
             </div>
         </section>
 
-        <div class="footer footer-mobile">Last updated 03-16-26</div>
+        <div class="footer footer-mobile">Last updated 05-24-26</div>
     </main>
 
     <aside class="photo-column" aria-label="Photo">
@@ -194,7 +193,7 @@
     </aside>
     </div>
 
-    <div class="footer footer-desktop">Last updated 03-16-26</div>
+    <div class="footer footer-desktop">Last updated 05-24-26</div>
 
     <div class="now-playing" id="now-playing" aria-live="polite">Now playing &ldquo;Psychic Geography&rdquo; by dovs</div>
 
