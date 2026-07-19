@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Edit &middot; justinmartin.wiki</title>
+    <meta name="robots" content="noindex, nofollow">
+    <link rel="icon" type="image/png" href="../assets/png-354cc08a9867.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500&display=swap">
+    <style>
+        *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+        :root{--bg:#fff;--text:#000;--muted:rgba(0,0,0,.4);--body:rgba(0,0,0,.65);--border:rgba(0,0,0,.1);--border-soft:rgba(0,0,0,.06)}
+        html{-webkit-font-smoothing:antialiased}
+        body{background:var(--bg);color:var(--text);font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;letter-spacing:-.015em;font-size:15px}
+        .wrap{max-width:640px;margin:0 auto;padding:44px 24px 120px}
+        h1{font-size:26px;font-weight:400;letter-spacing:-.03em;margin-bottom:4px}
+        .sub{color:var(--muted);font-size:13px;margin-bottom:36px}
+        .sub a{color:inherit}
+        section{margin-bottom:36px}
+        .label{display:flex;align-items:baseline;justify-content:space-between;font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:10px}
+        .hint{font-size:11px;text-transform:none;letter-spacing:-.01em}
+        textarea,input[type=text],input[type=password],input[type=url]{width:100%;font-family:inherit;font-size:15px;letter-spacing:-.012em;line-height:1.45;color:var(--text);background:none;border:1px solid var(--border);border-radius:8px;padding:10px 12px;resize:none;overflow:hidden}
+        textarea:focus,input:focus{outline:none;border-color:rgba(0,0,0,.4)}
+        .item{display:flex;gap:8px;align-items:flex-start;margin-bottom:8px}
+        .item .grow{flex:1;display:flex;flex-direction:column;gap:6px}
+        .item-btns{display:flex;flex-direction:column;gap:2px;padding-top:2px}
+        .ibtn{border:none;background:none;color:var(--muted);font-size:13px;line-height:1;padding:4px 6px;cursor:pointer;border-radius:5px;font-family:inherit}
+        .ibtn:hover{background:rgba(0,0,0,.05);color:var(--text)}
+        .add{border:1px dashed var(--border);background:none;border-radius:8px;color:var(--muted);font-family:inherit;font-size:13px;padding:8px 12px;cursor:pointer;width:100%;text-align:left}
+        .add:hover{color:var(--text);border-color:rgba(0,0,0,.3)}
+        .tagrow input.url{font-size:13px;color:var(--body)}
+        .bar{position:fixed;bottom:0;left:0;right:0;background:rgba(255,255,255,.92);backdrop-filter:blur(8px);border-top:1px solid var(--border-soft);padding:14px 24px calc(14px + env(safe-area-inset-bottom))}
+        .bar-inner{max-width:640px;margin:0 auto;display:flex;align-items:center;gap:14px}
+        .publish{background:#000;color:#fff;border:none;border-radius:999px;font-family:inherit;font-size:14px;font-weight:500;letter-spacing:-.01em;padding:11px 26px;cursor:pointer;transition:opacity .15s ease}
+        .publish:hover{opacity:.8}
+        .publish:disabled{opacity:.35;cursor:default}
+        .status{font-size:13px;color:var(--muted);flex:1}
+        .status.err{color:#c0392b}
+        .status.ok{color:#1e7a3c}
+        .signout{border:none;background:none;font-family:inherit;font-size:12px;color:var(--muted);cursor:pointer;text-decoration:underline;text-underline-offset:3px}
+        /* token screen */
+        .gate{max-width:440px;margin:16vh auto 0;padding:0 24px}
+        .gate h1{margin-bottom:12px}
+        .gate p{color:var(--body);font-size:14px;line-height:1.5;margin-bottom:18px}
+        .gate p a{color:#000}
+        .gate input{margin-bottom:12px}
+        .gate .publish{width:100%;text-align:center}
+        .gate .err-msg{color:#c0392b;font-size:13px;margin-top:12px}
+        .hidden{display:none!important}
+        code{font-size:12.5px;background:rgba(0,0,0,.05);padding:1px 5px;border-radius:4px}
+    </style>
+</head>
+<body>
+
+<!-- ============ PASSWORD GATE ============ -->
+<div class="gate hidden" id="gate">
+    <h1>Enter password</h1>
+    <input type="password" id="passInput" placeholder="Password" autocomplete="current-password">
+    <button class="publish" id="passGo">Unlock</button>
+    <div class="err-msg hidden" id="passErr"></div>
+</div>
+
+<!-- ============ FIRST-TIME SETUP ============ -->
+<div class="gate hidden" id="setup">
+    <h1>One-time setup</h1>
+    <p>1. <a href="https://github.com/settings/personal-access-tokens/new" target="_blank" rel="noopener noreferrer">Create a GitHub token</a>: under <strong>Repository access</strong> choose <em>Only select repositories</em> &rarr; <code>wiki</code>, then under <strong>Permissions &rarr; Repository permissions</strong> set <em>Contents</em> to <strong>Read and write</strong>. Click Generate and copy it.</p>
+    <p>2. Paste it here and choose your password. The token is encrypted with the password, so from then on the password is all you need.</p>
+    <input type="password" id="setupToken" placeholder="github_pat_&hellip;" autocomplete="off">
+    <input type="password" id="setupPass" placeholder="Choose a password" autocomplete="new-password">
+    <button class="publish" id="setupGo">Save &amp; continue</button>
+    <div class="err-msg hidden" id="setupErr"></div>
+</div>
+
+<!-- ============ EDITOR ============ -->
+<div class="wrap hidden" id="editor">
+    <h1>Edit wiki</h1>
+    <div class="sub"><a href="https://justinmartin.wiki/" target="_blank" rel="noopener">justinmartin.wiki</a> &middot; changes go live about a minute after publishing</div>
+
+    <section>
+        <div class="label"><span>Greeting</span><span class="hint">inline HTML ok</span></div>
+        <textarea id="greeting" rows="3"></textarea>
+    </section>
+
+    <section>
+        <div class="label"><span>Bio paragraphs</span><span class="hint">links: &lt;a href="…"&gt;text&lt;/a&gt;</span></div>
+        <div id="bioList"></div>
+        <button class="add" data-add="bio">+ Add paragraph</button>
+    </section>
+
+    <section>
+        <div class="label"><span>What's on my mind</span><span class="hint">one bullet per item</span></div>
+        <div id="thoughtsList"></div>
+        <button class="add" data-add="thoughts">+ Add thought</button>
+    </section>
+
+    <section>
+        <div class="label"><span>Hobbies and interests</span><span class="hint">URL optional</span></div>
+        <div id="hobbiesList"></div>
+        <button class="add" data-add="hobbies">+ Add hobby</button>
+    </section>
+
+    <section>
+        <div class="label"><span>My setup</span></div>
+        <div id="setupList"></div>
+        <button class="add" data-add="setup">+ Add tool</button>
+    </section>
+
+    <section>
+        <div class="label"><span>Photo caption</span></div>
+        <input type="text" id="caption">
+    </section>
+
+    <div class="bar">
+        <div class="bar-inner">
+            <span class="status" id="status">Loading&hellip;</span>
+            <button class="signout" id="signout">Sign out</button>
+            <button class="publish" id="publishBtn" disabled>Publish</button>
+        </div>
+    </div>
+</div>
+
+<script>
+(function () {
+    const OWNER = 'justintylerm', REPO = 'wiki', BRANCH = 'main', FILE = 'content.json';
+    const API = `https://api.github.com/repos/${OWNER}/${REPO}`;
+    const TOKEN_KEY = 'wiki_admin_token';
+
+    const $ = (id) => document.getElementById(id);
+    const gate = $('gate'), editor = $('editor'), statusEl = $('status'), publishBtn = $('publishBtn');
+
+    let token = localStorage.getItem(TOKEN_KEY) || '';
+    let sha = null;          // sha of content.json for safe updates
+    let dirty = false;
+
+    // ---------- utils ----------
+    const b64encode = (str) => {
+        const bytes = new TextEncoder().encode(str);
+        let bin = '';
+        bytes.forEach((b) => bin += String.fromCharCode(b));
+        return btoa(bin);
+    };
+    const b64decode = (b64) => {
+        const bin = atob(b64.replace(/\n/g, ''));
+        const bytes = Uint8Array.from(bin, (c) => c.charCodeAt(0));
+        return new TextDecoder().decode(bytes);
+    };
+    const gh = (path, opts = {}) => fetch(API + path, {
+        ...opts,
+        headers: {
+            'Authorization': 'Bearer ' + token,
+            'Accept': 'application/vnd.github+json',
+            'X-GitHub-Api-Version': '2022-11-28',
+            ...(opts.headers || {})
+        }
+    });
+    const setStatus = (msg, cls) => { statusEl.textContent = msg; statusEl.className = 'status' + (cls ? ' ' + cls : ''); };
+    const markDirty = () => {
+        if (!dirty) { dirty = true; publishBtn.disabled = false; setStatus('Unpublished changes'); }
+    };
+    const autosize = (el) => { el.style.height = 'auto'; el.style.height = el.scrollHeight + 'px'; };
+
+    // ---------- dynamic lists ----------
+    function makeTextarea(value, rows) {
+        const t = document.createElement('textarea');
+        t.rows = rows || 2;
+        t.value = value;
+        t.addEventListener('input', () => { autosize(t); markDirty(); });
+        requestAnimationFrame(() => autosize(t));
+        return t;
+    }
+    function makeInput(value, placeholder, cls) {
+        const i = document.createElement('input');
+        i.type = 'text';
+        i.value = value || '';
+        if (placeholder) i.placeholder = placeholder;
+        if (cls) i.className = cls;
+        i.addEventListener('input', markDirty);
+        return i;
+    }
+    function itemRow(listEl, fields) {
+        const row = document.createElement('div');
+        row.className = 'item';
+        const grow = document.createElement('div');
+        grow.className = 'grow';
+        fields.forEach((f) => grow.appendChild(f));
+        const btns = document.createElement('div');
+        btns.className = 'item-btns';
+        [['↑', () => { const p = row.previousElementSibling; if (p) { listEl.insertBefore(row, p); markDirty(); } }],
+         ['↓', () => { const n = row.nextElementSibling; if (n) { listEl.insertBefore(n, row); markDirty(); } }],
+         ['✕', () => { row.remove(); markDirty(); }]
+        ].forEach(([txt, fn]) => {
+            const b = document.createElement('button');
+            b.className = 'ibtn'; b.type = 'button'; b.textContent = txt;
+            b.addEventListener('click', fn);
+            btns.appendChild(b);
+        });
+        row.appendChild(grow);
+        row.appendChild(btns);
+        listEl.appendChild(row);
+        return row;
+    }
+
+    const addText = (listId, value, rows) => itemRow($(listId), [makeTextarea(value, rows)]);
+    const addHobby = (h) => {
+        const row = itemRow($('hobbiesList'), [
+            makeInput(h.label, 'Label'),
+            makeInput(h.url, 'https://  (optional link)', 'url')
+        ]);
+        row.classList.add('tagrow');
+    };
+    const addSetup = (s) => itemRow($('setupList'), [makeInput(s, 'Tool name')]);
+
+    document.querySelectorAll('.add').forEach((btn) => {
+        btn.addEventListener('click', () => {
+            const kind = btn.dataset.add;
+            if (kind === 'bio') addText('bioList', '', 2);
+            if (kind === 'thoughts') addText('thoughtsList', '', 2);
+            if (kind === 'hobbies') addHobby({ label: '', url: '' });
+            if (kind === 'setup') addSetup('');
+            markDirty();
+        });
+    });
+
+    // ---------- load ----------
+    function render(c) {
+        $('greeting').value = c.greeting;
+        autosize($('greeting'));
+        $('bioList').innerHTML = '';
+        c.bio.forEach((p) => addText('bioList', p, 2));
+        $('thoughtsList').innerHTML = '';
+        c.thoughts.forEach((t) => addText('thoughtsList', t, 2));
+        $('hobbiesList').innerHTML = '';
+        c.hobbies.forEach(addHobby);
+        $('setupList').innerHTML = '';
+        c.setup.forEach(addSetup);
+        $('caption').value = c.photoCaption;
+        dirty = false;
+        publishBtn.disabled = true;
+        setStatus('Up to date · last published ' + c.lastUpdated);
+    }
+    $('greeting').addEventListener('input', () => { autosize($('greeting')); markDirty(); });
+    $('caption').addEventListener('input', markDirty);
+
+    async function load() {
+        setStatus('Loading…');
+        const res = await gh(`/contents/${FILE}?ref=${BRANCH}&t=${Date.now()}`);
+        if (!res.ok) throw new Error('load failed (' + res.status + ')');
+        const data = await res.json();
+        sha = data.sha;
+        render(JSON.parse(b64decode(data.content)));
+    }
+
+    // ---------- collect + publish ----------
+    function collect() {
+        const texts = (listId) => Array.from($(listId).querySelectorAll('textarea'))
+            .map((t) => t.value.trim()).filter(Boolean);
+        const today = new Date();
+        const mm = String(today.getMonth() + 1).padStart(2, '0');
+        const dd = String(today.getDate()).padStart(2, '0');
+        const yy = String(today.getFullYear()).slice(-2);
+        return {
+            greeting: $('greeting').value.trim(),
+            bio: texts('bioList'),
+            thoughts: texts('thoughtsList'),
+            hobbies: Array.from($('hobbiesList').children).map((row) => {
+                const [label, url] = row.querySelectorAll('input');
+                const h = { label: label.value.trim() };
+                if (url.value.trim()) h.url = url.value.trim();
+                return h;
+            }).filter((h) => h.label),
+            setup: Array.from($('setupList').querySelectorAll('input'))
+                .map((i) => i.value.trim()).filter(Boolean),
+            photoCaption: $('caption').value.trim(),
+            lastUpdated: `${mm}-${dd}-${yy}`
+        };
+    }
+
+    async function pollDeploy() {
+        for (let i = 0; i < 40; i++) {
+            await new Promise((r) => setTimeout(r, 4000));
+            const res = await gh('/actions/runs?per_page=1');
+            if (!res.ok) return;
+            const run = (await res.json()).workflow_runs?.[0];
+            if (!run) return;
+            if (run.status === 'completed') {
+                if (run.conclusion === 'success') setStatus('Live ✓', 'ok');
+                else setStatus('Deploy failed — check GitHub Actions', 'err');
+                return;
+            }
+            setStatus('Deploying…');
+        }
+    }
+
+    async function publish() {
+        publishBtn.disabled = true;
+        setStatus('Publishing…');
+        try {
+            const content = collect();
+            const body = {
+                message: 'Update wiki content via admin',
+                content: b64encode(JSON.stringify(content, null, 2) + '\n'),
+                branch: BRANCH,
+                sha
+            };
+            const res = await gh(`/contents/${FILE}`, { method: 'PUT', body: JSON.stringify(body) });
+            if (res.status === 409) { // sha out of date — refetch and retry once
+                const cur = await gh(`/contents/${FILE}?ref=${BRANCH}`);
+                sha = (await cur.json()).sha;
+                body.sha = sha;
+                const retry = await gh(`/contents/${FILE}`, { method: 'PUT', body: JSON.stringify(body) });
+                if (!retry.ok) throw new Error('publish failed (' + retry.status + ')');
+                sha = (await retry.json()).content.sha;
+            } else if (!res.ok) {
+                throw new Error('publish failed (' + res.status + ')');
+            } else {
+                sha = (await res.json()).content.sha;
+            }
+            dirty = false;
+            setStatus('Published — deploying…');
+            pollDeploy();
+        } catch (err) {
+            setStatus(err.message, 'err');
+            publishBtn.disabled = false;
+        }
+    }
+    publishBtn.addEventListener('click', publish);
+    document.addEventListener('keydown', (e) => {
+        if ((e.metaKey || e.ctrlKey) && e.key === 's') {
+            e.preventDefault();
+            if (!publishBtn.disabled) publish();
+        }
+    });
+    window.addEventListener('beforeunload', (e) => { if (dirty) e.preventDefault(); });
+
+    // ---------- auth (password vault) ----------
+    // The GitHub token is stored in the repo at admin/vault.json, encrypted with
+    // the password (PBKDF2 600k -> AES-GCM). The password never leaves the browser.
+    const VAULT_PATH = 'admin/vault.json';
+    const setupEl = $('setup');
+    const show = (el) => {
+        [gate, setupEl, editor].forEach((x) => x.classList.add('hidden'));
+        el.classList.remove('hidden');
+    };
+
+    const bufToB64 = (buf) => {
+        let bin = '';
+        new Uint8Array(buf).forEach((b) => bin += String.fromCharCode(b));
+        return btoa(bin);
+    };
+    const b64ToBuf = (b64) => Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
+
+    async function deriveKey(pass, salt) {
+        const km = await crypto.subtle.importKey('raw', new TextEncoder().encode(pass), 'PBKDF2', false, ['deriveKey']);
+        return crypto.subtle.deriveKey(
+            { name: 'PBKDF2', salt, iterations: 600000, hash: 'SHA-256' },
+            km, { name: 'AES-GCM', length: 256 }, false, ['encrypt', 'decrypt']
+        );
+    }
+    async function encryptToken(tok, pass) {
+        const salt = crypto.getRandomValues(new Uint8Array(16));
+        const iv = crypto.getRandomValues(new Uint8Array(12));
+        const key = await deriveKey(pass, salt);
+        const ct = await crypto.subtle.encrypt({ name: 'AES-GCM', iv }, key, new TextEncoder().encode(tok));
+        return { salt: bufToB64(salt), iv: bufToB64(iv), data: bufToB64(ct) };
+    }
+    async function decryptToken(vault, pass) {
+        const key = await deriveKey(pass, b64ToBuf(vault.salt));
+        const pt = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: b64ToBuf(vault.iv) }, key, b64ToBuf(vault.data));
+        return new TextDecoder().decode(pt);
+    }
+
+    async function fetchVault() {
+        // Repo is public, so the vault is readable without auth. API first (no CDN lag), static file as fallback.
+        try {
+            const r = await fetch(`${API}/contents/${VAULT_PATH}?ref=${BRANCH}&t=${Date.now()}`, { headers: { 'Accept': 'application/vnd.github+json' } });
+            if (r.status === 404) return null;
+            if (r.ok) return JSON.parse(b64decode((await r.json()).content));
+        } catch (err) { /* fall through */ }
+        try {
+            const r = await fetch('vault.json?t=' + Date.now());
+            if (r.ok) return await r.json();
+            if (r.status === 404) return null;
+        } catch (err) { /* fall through */ }
+        return null;
+    }
+
+    async function start() {
+        show(editor);
+        try { await load(); }
+        catch (err) {
+            setStatus('Could not load content — ' + err.message, 'err');
+        }
+    }
+
+    $('passGo').addEventListener('click', async () => {
+        const errEl = $('passErr');
+        errEl.classList.add('hidden');
+        const pass = $('passInput').value;
+        if (!pass) return;
+        $('passGo').disabled = true;
+        try {
+            token = await decryptToken(window.__vault, pass);
+        } catch (err) {
+            $('passGo').disabled = false;
+            errEl.textContent = 'Wrong password.';
+            errEl.classList.remove('hidden');
+            return;
+        }
+        $('passGo').disabled = false;
+        const res = await gh('');
+        if (!res.ok) {
+            errEl.textContent = 'Password OK, but the stored GitHub token no longer works (' + res.status + '). Open /admin/?setup=1 to save a new one.';
+            errEl.classList.remove('hidden');
+            return;
+        }
+        localStorage.setItem(TOKEN_KEY, token);
+        start();
+    });
+    $('passInput').addEventListener('keydown', (e) => { if (e.key === 'Enter') $('passGo').click(); });
+
+    $('setupGo').addEventListener('click', async () => {
+        const errEl = $('setupErr');
+        errEl.classList.add('hidden');
+        const tok = $('setupToken').value.trim();
+        const pass = $('setupPass').value;
+        const fail = (msg) => { errEl.textContent = msg; errEl.classList.remove('hidden'); $('setupGo').disabled = false; };
+        if (!tok) return fail('Paste the GitHub token first.');
+        if (pass.length < 8) return fail('Password needs at least 8 characters.');
+        $('setupGo').disabled = true;
+        token = tok;
+        const res = await gh('');
+        if (!res.ok) return fail('GitHub rejected that token (' + res.status + '). Check its repository access and permissions.');
+        try {
+            const vault = await encryptToken(tok, pass);
+            // Include sha if a vault already exists (re-running setup).
+            let sha;
+            const cur = await gh(`/contents/${VAULT_PATH}?ref=${BRANCH}`);
+            if (cur.ok) sha = (await cur.json()).sha;
+            const body = {
+                message: 'Set up admin access',
+                content: b64encode(JSON.stringify(vault) + '\n'),
+                branch: BRANCH
+            };
+            if (sha) body.sha = sha;
+            const put = await gh(`/contents/${VAULT_PATH}`, { method: 'PUT', body: JSON.stringify(body) });
+            if (!put.ok) return fail('Could not save (' + put.status + '). The token needs Contents: read and write.');
+        } catch (err) {
+            return fail('Setup failed — ' + err.message);
+        }
+        localStorage.setItem(TOKEN_KEY, tok);
+        $('setupGo').disabled = false;
+        start();
+    });
+
+    $('signout').addEventListener('click', () => {
+        localStorage.removeItem(TOKEN_KEY);
+        location.reload();
+    });
+
+    (async function init() {
+        if (new URLSearchParams(location.search).has('setup')) { show(setupEl); return; }
+        if (token) { start(); return; }
+        window.__vault = await fetchVault();
+        if (window.__vault) show(gate);
+        else show(setupEl);
+    })();
+})();
+</script>
+</body>
+</html>

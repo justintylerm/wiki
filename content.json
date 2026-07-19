@@ -1,0 +1,36 @@
+{
+  "greeting": "Hey there, I'm Justin. I'm a lifelong creative problem solver, currently working at Supper<span class=\"green\" aria-hidden=\"true\">.</span>",
+  "bio": [
+    "In the past, I've been called a designer and filmmaker. Now, my world revolves around digital marketing and building new possibilities with artificial intelligence.",
+    "In my free time, I enjoy obsessing over music, tending to my garden<span class=\"green\" aria-hidden=\"true\">,</span> and spending time outdoors.",
+    "One thing I'm incredibly proud of is achieving over 20&nbsp;million lifetime views on YouTube<span class=\"green\" aria-hidden=\"true\">.</span>"
+  ],
+  "thoughts": [
+    "Currently tinkering with <a href=\"https://hermes-agent.nousresearch.com/\" target=\"_blank\" rel=\"noopener noreferrer\">Hermes</a>, building automations and context-capture systems to make tech more intentional in my life.",
+    "All invasive plants are non-native. But not all non-native are invasive.",
+    "Picked up the <a href=\"https://www.amazon.com/XTEINK-X4-Ultra-Thin-Magnetic-Ready-Distraction-Free/dp/B0GPXPK65X\" target=\"_blank\" rel=\"noopener noreferrer\">XTEINK X4</a>. E-Ink is magic. Finished <a href=\"https://www.goodreads.com/book/show/70401.On_the_Road\" target=\"_blank\" rel=\"noopener noreferrer\">On the Road</a> recently and it rules.",
+    "We are living through the best time in history to be making things online.",
+    "2026 gardening expense tracker: $198.77"
+  ],
+  "hobbies": [
+    { "label": "Gardening" },
+    { "label": "Music" },
+    { "label": "Photography", "url": "https://www.dropbox.com/scl/fo/e5nqz3r68ner5npch5p58/ACk9waTABmue55M7QXIDxE8?rlkey=gfngggg2i8eo3fuuwtpgyk42z&st=4n6g5e1c&dl=0" },
+    { "label": "Fishing" },
+    { "label": "Biking" }
+  ],
+  "setup": [
+    "Speechify",
+    "Obsidian",
+    "Superwhisper",
+    "Alfred",
+    "Hermes Agent",
+    "Figma",
+    "CleanShot X",
+    "Claude",
+    "ChatGPT",
+    "Klack"
+  ],
+  "photoCaption": "Ollie and I, 2025",
+  "lastUpdated": "05-24-26"
+}
