@@ -88,3 +88,13 @@ const nowPlaying = document.getElementById('now-playing');
             fetchTrack();
             setInterval(fetchTrack, 30000);
         })();
+
+        /* iNaturalist plant observation count */
+        (function() {
+            const el = document.getElementById('inat-count');
+            if (!el) return;
+            fetch('https://api.inaturalist.org/v1/observations?user_id=justintylerm&taxon_id=47126&per_page=0')
+                .then((r) => r.json())
+                .then((d) => { if (typeof d.total_results === 'number') el.textContent = d.total_results; })
+                .catch(() => {});
+        })();
