@@ -40,6 +40,25 @@
         .status.err{color:#c0392b}
         .status.ok{color:#1e7a3c}
         .signout{border:none;background:none;font-family:inherit;font-size:12px;color:var(--muted);cursor:pointer;text-decoration:underline;text-underline-offset:3px}
+        /* post management */
+        .nav{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:30px}
+        .nav button{border:1px solid var(--border);background:none;border-radius:999px;font-family:inherit;font-size:13px;letter-spacing:-.01em;color:var(--body);padding:6px 13px;cursor:pointer;max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+        .nav button:hover{border-color:rgba(0,0,0,.3);color:var(--text)}
+        .nav button.active{background:#000;color:#fff;border-color:#000}
+        .nav .newbtn{border-style:dashed;color:var(--muted)}
+        .img-field{display:flex;align-items:flex-start;gap:14px}
+        .img-preview{width:96px;height:96px;border-radius:8px;object-fit:cover;border:1px solid var(--border);background:rgba(0,0,0,.03);flex-shrink:0}
+        .img-preview.empty{display:none}
+        .img-actions{display:flex;flex-direction:column;gap:8px;align-items:flex-start}
+        .file-btn{border:1px dashed var(--border);background:none;border-radius:8px;color:var(--muted);font-family:inherit;font-size:13px;padding:8px 12px;cursor:pointer}
+        .file-btn:hover{color:var(--text);border-color:rgba(0,0,0,.3)}
+        .link-btn{border:none;background:none;color:var(--muted);font-family:inherit;font-size:12px;cursor:pointer;text-decoration:underline;text-underline-offset:3px;padding:0}
+        .link-btn:hover{color:var(--text)}
+        .link-btn.danger:hover{color:#c0392b}
+        .toggle-row{display:flex;align-items:center;gap:9px}
+        .toggle-row input{width:auto;margin:0}
+        .toggle-row label{font-size:14px;color:var(--body);cursor:pointer}
+        input[type=file]{display:none}
         /* token screen */
         .gate{max-width:440px;margin:16vh auto 0;padding:0 24px}
         .gate h1{margin-bottom:12px}
@@ -75,6 +94,9 @@
 
 <!-- ============ EDITOR ============ -->
 <div class="wrap hidden" id="editor">
+    <nav class="nav" id="nav"></nav>
+
+    <div id="homeView">
     <h1>Edit wiki</h1>
     <div class="sub"><a href="https://justinmartin.wiki/" target="_blank" rel="noopener">justinmartin.wiki</a> &middot; changes go live about a minute after publishing</div>
 
@@ -112,6 +134,52 @@
         <input type="text" id="caption">
     </section>
 
+    </div><!-- /homeView -->
+
+    <div id="postView" class="hidden">
+        <h1 id="postHeading">New post</h1>
+        <div class="sub">Lives at justinmartin.wiki/blog/<span id="slugEcho">&hellip;</span>/ &middot; goes live about a minute after publishing</div>
+
+        <section>
+            <div class="label"><span>Title</span><span class="hint">the big heading</span></div>
+            <input type="text" id="postTitle" placeholder="Post title">
+        </section>
+
+        <section>
+            <div class="label"><span>URL slug</span><span class="hint">auto from title, editable</span></div>
+            <input type="text" id="postSlug" placeholder="my-post">
+        </section>
+
+        <section>
+            <div class="label"><span>Image</span><span class="hint">optional &middot; the right-side photo</span></div>
+            <div class="img-field">
+                <img class="img-preview empty" id="imgPreview" alt="">
+                <div class="img-actions">
+                    <button type="button" class="file-btn" id="imgPick">Choose image&hellip;</button>
+                    <button type="button" class="link-btn danger" id="imgRemove" style="display:none">Remove image</button>
+                    <input type="file" id="imgFile" accept="image/*">
+                </div>
+            </div>
+        </section>
+
+        <section>
+            <div class="label"><span>Body</span><span class="hint">links: &lt;a href="&hellip;"&gt;text&lt;/a&gt;</span></div>
+            <div id="postBodyList"></div>
+            <button class="add" data-add="postBody">+ Add paragraph</button>
+        </section>
+
+        <section>
+            <div class="toggle-row">
+                <input type="checkbox" id="postPublished" checked>
+                <label for="postPublished">Published (uncheck to keep as a draft)</label>
+            </div>
+        </section>
+
+        <section>
+            <button type="button" class="link-btn danger" id="postDelete" style="display:none">Delete this post</button>
+        </section>
+    </div><!-- /postView -->
+
     <div class="bar">
         <div class="bar-inner">
             <span class="status" id="status">Loading&hellip;</span>
@@ -130,9 +198,21 @@
     const $ = (id) => document.getElementById(id);
     const gate = $('gate'), editor = $('editor'), statusEl = $('status'), publishBtn = $('publishBtn');
 
+    const homeView = $('homeView'), postView = $('postView'), navEl = $('nav');
+
     let token = localStorage.getItem(TOKEN_KEY) || '';
     let sha = null;          // sha of content.json for safe updates
     let dirty = false;
+    let loadedContent = null; // last-loaded homepage content, for discard-on-switch
+
+    // --- blog post state ---
+    let posts = [];           // array from posts.json
+    let postsSha = null;      // sha of posts.json for safe updates
+    let mode = 'home';        // 'home' | 'post'
+    let editingIndex = -1;    // index of the post being edited, -1 = new
+    let currentImagePath = '';// existing image path on the post being edited
+    let pendingImage = null;  // { base64, ext } staged upload, if any
+    let slugTouched = false;  // has the user hand-edited the slug?
 
     // ---------- utils ----------
     const b64encode = (str) => {
@@ -219,6 +299,7 @@
             if (kind === 'thoughts') addText('thoughtsList', '', 2);
             if (kind === 'hobbies') addHobby({ label: '', url: '' });
             if (kind === 'setup') addSetup('');
+            if (kind === 'postBody') addText('postBodyList', '', 3);
             markDirty();
         });
     });
@@ -249,7 +330,8 @@
         if (!res.ok) throw new Error('load failed (' + res.status + ')');
         const data = await res.json();
         sha = data.sha;
-        render(JSON.parse(b64decode(data.content)));
+        loadedContent = JSON.parse(b64decode(data.content));
+        render(loadedContent);
     }
 
     // ---------- collect + publish ----------
@@ -317,22 +399,251 @@
             } else {
                 sha = (await res.json()).content.sha;
             }
+            loadedContent = content;
             dirty = false;
-            setStatus('Published — deploying…');
+            setStatus('Published, deploying…');
             pollDeploy();
         } catch (err) {
             setStatus(err.message, 'err');
             publishBtn.disabled = false;
         }
     }
-    publishBtn.addEventListener('click', publish);
+    const doPublish = () => { if (mode === 'post') publishPost(); else publish(); };
+    publishBtn.addEventListener('click', doPublish);
     document.addEventListener('keydown', (e) => {
         if ((e.metaKey || e.ctrlKey) && e.key === 's') {
             e.preventDefault();
-            if (!publishBtn.disabled) publish();
+            if (!publishBtn.disabled) doPublish();
         }
     });
     window.addEventListener('beforeunload', (e) => { if (dirty) e.preventDefault(); });
+
+    // ---------- posts (blog) ----------
+    const slugify = (s) => String(s).toLowerCase()
+        .replace(/<[^>]*>/g, '')
+        .replace(/[^\w\s-]/g, '')
+        .trim()
+        .replace(/[\s_]+/g, '-')
+        .replace(/-+/g, '-')
+        .replace(/^-|-$/g, '');
+
+    const todayStamp = () => new Intl.DateTimeFormat('en-US', {
+        timeZone: 'America/Chicago', month: '2-digit', day: '2-digit', year: '2-digit'
+    }).format(new Date()).replace(/\//g, '-');
+
+    async function loadPosts() {
+        const res = await gh(`/contents/posts.json?ref=${BRANCH}&t=${Date.now()}`);
+        if (res.status === 404) { posts = []; postsSha = null; return; }
+        if (!res.ok) throw new Error('posts load failed (' + res.status + ')');
+        const data = await res.json();
+        postsSha = data.sha;
+        try { posts = JSON.parse(b64decode(data.content)); } catch (e) { posts = []; }
+        if (!Array.isArray(posts)) posts = [];
+    }
+
+    function renderNav() {
+        navEl.innerHTML = '';
+        const mk = (label, onClick, opts) => {
+            const b = document.createElement('button');
+            b.type = 'button';
+            b.textContent = label;
+            if (opts && opts.active) b.classList.add('active');
+            if (opts && opts.cls) b.classList.add(opts.cls);
+            b.addEventListener('click', onClick);
+            navEl.appendChild(b);
+        };
+        mk('Homepage', switchToHome, { active: mode === 'home' });
+        posts.forEach((p, i) => {
+            const label = (p.title && p.title.trim()) || 'Untitled';
+            mk(label + (p.published ? '' : ' · draft'), () => switchToPost(i),
+               { active: mode === 'post' && editingIndex === i });
+        });
+        mk('+ New post', () => switchToPost(-1),
+           { cls: 'newbtn', active: mode === 'post' && editingIndex === -1 });
+    }
+
+    const guardDirty = () => !dirty || confirm('You have unpublished changes. Discard them?');
+
+    function switchToHome() {
+        if (mode === 'home' || !guardDirty()) return;
+        mode = 'home';
+        postView.classList.add('hidden');
+        homeView.classList.remove('hidden');
+        if (loadedContent) render(loadedContent);
+        renderNav();
+    }
+
+    function switchToPost(i) {
+        if (mode === 'post' && editingIndex === i) return;
+        if (!guardDirty()) return;
+        mode = 'post';
+        editingIndex = i;
+        homeView.classList.add('hidden');
+        postView.classList.remove('hidden');
+        renderPostForm(i >= 0 ? posts[i] : null);
+        renderNav();
+    }
+
+    function setImagePreview(url) {
+        const img = $('imgPreview');
+        if (url) { img.src = url; img.classList.remove('empty'); $('imgRemove').style.display = ''; }
+        else { img.removeAttribute('src'); img.classList.add('empty'); $('imgRemove').style.display = 'none'; }
+    }
+
+    // Downscale + re-encode client-side so uploads stay small. Prefers WebP, falls back to JPEG.
+    function downscaleImage(file, max, quality) {
+        max = max || 1200; quality = quality || 0.82;
+        return new Promise((resolve, reject) => {
+            const img = new Image();
+            const url = URL.createObjectURL(file);
+            img.onload = () => {
+                URL.revokeObjectURL(url);
+                let w = img.naturalWidth, h = img.naturalHeight;
+                if (w > max || h > max) {
+                    if (w >= h) { h = Math.round(h * max / w); w = max; }
+                    else { w = Math.round(w * max / h); h = max; }
+                }
+                const c = document.createElement('canvas');
+                c.width = w; c.height = h;
+                c.getContext('2d').drawImage(img, 0, 0, w, h);
+                let ext = 'webp', out = c.toDataURL('image/webp', quality);
+                if (out.indexOf('data:image/webp') !== 0) { ext = 'jpg'; out = c.toDataURL('image/jpeg', quality); }
+                resolve({ dataUrl: out, base64: out.split(',')[1], ext });
+            };
+            img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('could not read image')); };
+            img.src = url;
+        });
+    }
+
+    function renderPostForm(post) {
+        pendingImage = null;
+        slugTouched = !!(post && post.slug);
+        $('postHeading').textContent = post ? 'Edit post' : 'New post';
+        $('postTitle').value = post ? (post.title || '') : '';
+        $('postSlug').value = post ? (post.slug || '') : '';
+        $('slugEcho').textContent = (post && post.slug) || '…';
+        $('postBodyList').innerHTML = '';
+        const body = (post && post.body) || [];
+        if (body.length) body.forEach((p) => addText('postBodyList', p, 3));
+        else addText('postBodyList', '', 3);
+        currentImagePath = (post && post.image) || '';
+        setImagePreview(currentImagePath ? `https://justinmartin.wiki/${currentImagePath}?t=${Date.now()}` : null);
+        $('postPublished').checked = post ? !!post.published : true;
+        $('postDelete').style.display = post ? '' : 'none';
+        dirty = false;
+        publishBtn.disabled = true;
+        setStatus(post ? ('Editing “' + ((post.title || '').trim() || 'Untitled') + '”') : 'New post');
+    }
+
+    const collectPostBody = () => Array.from($('postBodyList').querySelectorAll('textarea'))
+        .map((t) => t.value.trim()).filter(Boolean);
+
+    function putFile(pathName, contentB64, message, fileSha) {
+        const body = { message, content: contentB64, branch: BRANCH };
+        if (fileSha) body.sha = fileSha;
+        return gh(`/contents/${pathName}`, { method: 'PUT', body: JSON.stringify(body) });
+    }
+
+    async function savePosts(arr, message) {
+        const payload = () => b64encode(JSON.stringify(arr, null, 2) + '\n');
+        let res = await putFile('posts.json', payload(), message, postsSha);
+        if (res.status === 409 || res.status === 422) { // sha stale — refetch and retry once
+            const cur = await gh(`/contents/posts.json?ref=${BRANCH}`);
+            postsSha = cur.ok ? (await cur.json()).sha : null;
+            res = await putFile('posts.json', payload(), message, postsSha);
+        }
+        if (!res.ok) throw new Error('publish failed (' + res.status + ')');
+        postsSha = (await res.json()).content.sha;
+    }
+
+    async function uploadImage(pathName, base64) {
+        let fileSha;
+        const cur = await gh(`/contents/${pathName}?ref=${BRANCH}`);
+        if (cur.ok) fileSha = (await cur.json()).sha;
+        const res = await putFile(pathName, base64, 'Add post image: ' + pathName, fileSha);
+        if (!res.ok) throw new Error('image upload failed (' + res.status + ')');
+    }
+
+    async function publishPost() {
+        const title = $('postTitle').value.trim();
+        const slug = slugify($('postSlug').value.trim() || title);
+        if (!title) { setStatus('Add a title first', 'err'); return; }
+        if (!slug) { setStatus('Add a valid URL slug', 'err'); return; }
+        if (posts.some((p, i) => i !== editingIndex && p.slug === slug)) {
+            setStatus('Another post already uses “' + slug + '”', 'err'); return;
+        }
+        publishBtn.disabled = true;
+        setStatus('Publishing…');
+        try {
+            let imagePath = currentImagePath;
+            if (pendingImage) {
+                imagePath = `assets/posts/${slug}.${pendingImage.ext}`;
+                await uploadImage(imagePath, pendingImage.base64);
+            }
+            const post = { slug, title, date: todayStamp(), body: collectPostBody(), published: $('postPublished').checked };
+            if (imagePath) post.image = imagePath;
+            const next = posts.slice();
+            if (editingIndex >= 0) next[editingIndex] = post; else next.push(post);
+            await savePosts(next, (editingIndex >= 0 ? 'Update post: ' : 'Add post: ') + slug);
+            posts = next;
+            editingIndex = editingIndex >= 0 ? editingIndex : posts.length - 1;
+            currentImagePath = imagePath;
+            pendingImage = null;
+            dirty = false;
+            renderNav();
+            $('slugEcho').textContent = slug;
+            setStatus('Published, deploying…');
+            pollDeploy();
+        } catch (err) {
+            setStatus(err.message, 'err');
+            publishBtn.disabled = false;
+        }
+    }
+
+    $('postTitle').addEventListener('input', () => {
+        if (!slugTouched) { const s = slugify($('postTitle').value); $('postSlug').value = s; $('slugEcho').textContent = s || '…'; }
+        markDirty();
+    });
+    $('postSlug').addEventListener('input', () => {
+        slugTouched = true; $('slugEcho').textContent = slugify($('postSlug').value) || '…'; markDirty();
+    });
+    $('postPublished').addEventListener('change', markDirty);
+    $('imgPick').addEventListener('click', () => $('imgFile').click());
+    $('imgFile').addEventListener('change', async (e) => {
+        const file = e.target.files && e.target.files[0];
+        e.target.value = '';
+        if (!file) return;
+        try {
+            const r = await downscaleImage(file);
+            pendingImage = { base64: r.base64, ext: r.ext };
+            setImagePreview(r.dataUrl);
+            markDirty();
+        } catch (err) { setStatus('Image error: ' + err.message, 'err'); }
+    });
+    $('imgRemove').addEventListener('click', () => {
+        pendingImage = null; currentImagePath = ''; setImagePreview(null); markDirty();
+    });
+    $('postDelete').addEventListener('click', async () => {
+        if (editingIndex < 0) return;
+        const p = posts[editingIndex];
+        if (!confirm('Delete “' + ((p.title || '').trim() || 'Untitled') + '”? The live page comes down on the next deploy.')) return;
+        publishBtn.disabled = true;
+        setStatus('Deleting…');
+        try {
+            const next = posts.slice();
+            next.splice(editingIndex, 1);
+            await savePosts(next, 'Delete post: ' + (p.slug || ''));
+            posts = next;
+            dirty = false;
+            mode = 'home';
+            postView.classList.add('hidden');
+            homeView.classList.remove('hidden');
+            if (loadedContent) render(loadedContent);
+            renderNav();
+            setStatus('Deleted, deploying…');
+            pollDeploy();
+        } catch (err) { setStatus(err.message, 'err'); publishBtn.disabled = false; }
+    });
 
     // ---------- auth (password vault) ----------
     // The GitHub token is stored in the repo at admin/vault.json, encrypted with
@@ -388,8 +699,15 @@
 
     async function start() {
         show(editor);
-        try { await load(); }
-        catch (err) {
+        mode = 'home';
+        editingIndex = -1;
+        homeView.classList.remove('hidden');
+        postView.classList.add('hidden');
+        try {
+            await load();
+            await loadPosts();
+            renderNav();
+        } catch (err) {
             setStatus('Could not load content — ' + err.message, 'err');
         }
     }
