@@ -1,14 +1,13 @@
 [
   {
-    "slug": "hello-world",
-    "title": "Hello world",
+    "slug": "life-upgrades",
+    "title": "Life upgrades",
     "date": "07-27-26",
-    "image": "assets/photo.webp",
-    "imageAlt": "Justin and Ollie",
     "body": [
-      "This is a throwaway test post to confirm the blog system works end to end. It hijacks the homepage layout exactly: the title up top, the date on the right, the photo alongside it, and a <a href=\"https://justinmartin.wiki/\">Back</a> link where “now playing” usually sits.",
-      "Everything you’re reading is stored in posts.json and rendered at build time. To take this page down, open /admin, select this post, and hit Delete (or just uncheck Published). It’ll 404 on the next deploy."
+      "This is a comprehensive list of stuff that has changed my life for the better than I think more people should know about:",
+      "1. Bidet\n2. Shaver\n3. Wireless Vacuum"
     ],
-    "published": true
+    "published": true,
+    "image": "assets/posts/life-upgrades.webp"
   }
 ]
