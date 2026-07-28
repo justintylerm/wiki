@@ -4,8 +4,18 @@
     "title": "Life upgrades",
     "date": "07-27-26",
     "body": [
-      "This is a comprehensive list of stuff that has changed my life for the better than I think more people should know about:",
-      "1. Bidet\n2. Shaver\n3. Wireless Vacuum"
+      {
+        "type": "p",
+        "text": "This is a comprehensive list of stuff that has changed my life for the better than I think more people should know about:"
+      },
+      {
+        "type": "ul",
+        "items": [
+          "Bidet",
+          "Shaver",
+          "Wireless Vacuum"
+        ]
+      }
     ],
     "published": true,
     "image": "assets/posts/life-upgrades.webp"
