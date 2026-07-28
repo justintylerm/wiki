@@ -116,7 +116,7 @@ function renderPost(post) {
 
     const photo = post.image ? `
     <aside class="photo-column" aria-label="Post image">
-        <img class="photo-main" src="/${post.image}" alt="${escapeHtml(post.imageAlt || post.title || '')}" decoding="async">
+        <img class="photo-main" src="/${post.image}" alt="${escapeHtml(post.imageAlt || post.title || '')}" width="330" height="440" decoding="async">
     </aside>` : '';
 
     const bodyClass = post.image ? '' : ' class="no-photo"';

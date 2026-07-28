@@ -56,8 +56,8 @@
         .thoughts-list li{list-style:none;position:relative;font-size:14px;font-weight:400;color:var(--text-body);letter-spacing:-.012em;line-height:1.38em;padding-left:12px}
         .thoughts-list li::before{content:"";position:absolute;left:0;top:.62em;width:4px;height:4px;border-radius:50%;background:rgba(0,0,0,.28)}
         .page-wrapper{display:flex;min-height:100vh}
-        .photo-column{position:fixed;right:30px;bottom:30px;display:flex;flex-direction:column;align-items:flex-end;justify-content:flex-end}
-        .photo-main{max-width:330px;width:100%;height:auto;object-fit:cover;object-position:center 20%}
+        .photo-column{position:fixed;right:30px;bottom:30px;display:flex;flex-direction:column;align-items:flex-end;justify-content:flex-end;animation:photoFade .8s cubic-bezier(.22,1,.36,1) .05s both}
+        .photo-main{width:330px;height:440px;object-fit:cover;object-position:center 20%}
         .photo-caption{color:var(--text-body);font-size:12px;font-weight:400;line-height:1.6em;text-align:right;margin-bottom:13px}
         .footer{position:fixed;top:50px;right:30px;color:var(--text-body);font-size:12px;line-height:1.6em;z-index:10}
         .footer-mobile{display:none}
@@ -65,6 +65,7 @@
         .now-playing.hidden,.footer.hidden{opacity:0!important;visibility:hidden;pointer-events:none}
         .fade-up{opacity:0;transform:translateY(14px);animation:fadeUp .55s cubic-bezier(.22,1,.36,1) forwards}
         @keyframes fadeUp{to{opacity:1;transform:translateY(0)}}
+        @keyframes photoFade{from{opacity:0}to{opacity:1}}
         .delay-1{animation-delay:.06s}.delay-2{animation-delay:.14s}.delay-3{animation-delay:.22s}.delay-4{animation-delay:.30s}.delay-5{animation-delay:.38s}.delay-6{animation-delay:.44s}
         @media (prefers-reduced-motion: reduce){.fade-up{animation:none;opacity:1;transform:none}*,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important}}
         @media (max-width:1100px){
@@ -138,6 +139,7 @@
                             <li>Picked up the <a href="https://www.amazon.com/XTEINK-X4-Ultra-Thin-Magnetic-Ready-Distraction-Free/dp/B0GPXPK65X" target="_blank" rel="noopener noreferrer">XTEINK X4</a>. E-Ink is magic. Finished <a href="https://www.goodreads.com/book/show/70401.On_the_Road" target="_blank" rel="noopener noreferrer">On the Road</a> recently and it rules.</li>
                             <li>We are living through the best time in history to be making things online.</li>
                             <li>2026 gardening expense tracker: $198.77</li>
+                            <li><a href="https://justinmartin.wiki/blog/life-upgrades/">https://justinmartin.wiki/blog/life-upgrades/</a></li>
                         <!-- /cms:thoughts --></ul>
                     </div>
                 </div>
