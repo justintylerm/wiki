@@ -63,15 +63,67 @@ const stamp = new Intl.DateTimeFormat('en-US', {
 }).format(new Date()).replace(/\//g, '-');
 inject('updated', `Last updated ${stamp}`);
 
+const escapeHtml = (s) => String(s == null ? '' : s)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+
+// posts.json is the single source of truth for both the "Latest posts" tree below
+// and the blog page generator further down. Load it once, here, and reuse.
+let posts = [];
+const postsPath = path.join(root, 'posts.json');
+if (fs.existsSync(postsPath)) {
+    try {
+        posts = JSON.parse(fs.readFileSync(postsPath, 'utf8'));
+    } catch (err) {
+        console.error('posts.json is not valid JSON:', err.message);
+        process.exit(1);
+    }
+}
+if (!Array.isArray(posts)) posts = [];
+
+// ---------------------------------------------------------------------------
+// Latest posts tree → cms:posts (top 3 published, newest first)
+// Rendered as an analog file-tree inside the "What's on my mind" accordion.
+// The (MM-DD) suffix is derived here from each post's date, not stored in the post.
+// ---------------------------------------------------------------------------
+
+// "07-27-26" -> "07-27"
+const mmdd = (date) => {
+    const [mm, dd] = String(date == null ? '' : date).split('-');
+    return mm && dd ? `${mm}-${dd}` : '';
+};
+// "MM-DD-YY" -> "YY-MM-DD" so plain string compare sorts chronologically.
+const postSortKey = (p) => {
+    const [mm, dd, yy] = String(p && p.date ? p.date : '').split('-');
+    return `${yy || ''}-${mm || ''}-${dd || ''}`;
+};
+
+const latest = posts
+    .filter((p) => p && p.published && p.slug)
+    .sort((a, b) => postSortKey(b).localeCompare(postSortKey(a)))
+    .slice(0, 3);
+
+const postRows = latest.map((p) => {
+    const md = mmdd(p.date);
+    const label = md ? `${escapeHtml(p.title)} (${escapeHtml(md)})` : escapeHtml(p.title);
+    return `                            <li><a href="/blog/${escapeHtml(p.slug)}/">${label}</a></li>`;
+}).join('\n');
+
+inject('posts', `
+                        <div class="posts-title">Latest posts</div>
+                        <ul class="posts-list">
+${postRows}
+                        </ul>
+                        <ul class="posts-list posts-list--archive">
+                            <li><a href="/archive/">Archive</a></li>
+                        </ul>
+                    `);
+
 fs.writeFileSync(path.join(root, 'index.html'), html);
 console.log('Built index.html from content.json');
 
 // ---------------------------------------------------------------------------
 // Blog posts → blog/<slug>/index.html
 // ---------------------------------------------------------------------------
-
-const escapeHtml = (s) => String(s == null ? '' : s)
-    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 
 // Plain-text (for <title>/meta): drop tags, collapse whitespace, then escape.
 const metaText = (s, max) => {
@@ -184,18 +236,7 @@ const blogDir = path.join(root, 'blog');
 // never leave an orphan folder behind.
 fs.rmSync(blogDir, { recursive: true, force: true });
 
-let posts = [];
-const postsPath = path.join(root, 'posts.json');
-if (fs.existsSync(postsPath)) {
-    try {
-        posts = JSON.parse(fs.readFileSync(postsPath, 'utf8'));
-    } catch (err) {
-        console.error('posts.json is not valid JSON:', err.message);
-        process.exit(1);
-    }
-}
-if (!Array.isArray(posts)) posts = [];
-
+// posts already loaded and validated above (shared with the Latest posts tree).
 const live = posts.filter((p) => p && p.published && p.slug);
 live.forEach((post) => {
     const dir = path.join(blogDir, post.slug);

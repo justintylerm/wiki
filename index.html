@@ -55,6 +55,16 @@
         .thoughts-list{display:flex;flex-direction:column;gap:16px}
         .thoughts-list li{list-style:none;position:relative;font-size:14px;font-weight:400;color:var(--text-body);letter-spacing:-.012em;line-height:1.38em;padding-left:12px}
         .thoughts-list li::before{content:"";position:absolute;left:0;top:.62em;width:4px;height:4px;border-radius:50%;background:rgba(0,0,0,.28)}
+        .posts-tree{margin-top:26px;--tree-line:var(--border);--tree-indent:22px}
+        .posts-title{font-size:17px;font-weight:400;letter-spacing:-.016em;line-height:1.38em;color:var(--text-body);margin-bottom:14px}
+        .posts-list{list-style:none;margin:0;padding:0}
+        .posts-list li{position:relative;padding:6px 0 6px var(--tree-indent);font-size:14px;line-height:1.4em}
+        .posts-list li::before{content:"";position:absolute;left:0;top:0;height:100%;border-left:1px solid var(--tree-line)}
+        .posts-list li:last-child::before{height:calc(6px + .7em)}
+        .posts-list li::after{content:"";position:absolute;left:0;top:calc(6px + .7em);width:calc(var(--tree-indent) - 7px);border-top:1px solid var(--tree-line)}
+        .posts-list a{color:var(--text-body);text-decoration:none;letter-spacing:-.012em;transition:color .2s ease}
+        .posts-list a:hover{color:#000;text-decoration:underline;text-decoration-thickness:1px;text-underline-offset:3px}
+        .posts-list--archive{margin-left:var(--tree-indent)}
         .page-wrapper{display:flex;min-height:100vh}
         .photo-column{position:fixed;right:30px;bottom:30px;display:flex;flex-direction:column;align-items:flex-end;justify-content:flex-end;animation:photoFade .8s cubic-bezier(.22,1,.36,1) .05s both}
         .photo-main{width:330px;height:440px;object-fit:cover;object-position:center 20%}
@@ -141,6 +151,15 @@
                             <li>2026 gardening expense tracker: $198.77</li>
                             <li><a href="https://justinmartin.wiki/blog/life-upgrades/">https://justinmartin.wiki/blog/life-upgrades/</a></li>
                         <!-- /cms:thoughts --></ul>
+                        <div class="posts-tree" aria-label="Latest posts"><!-- cms:posts -->
+                        <div class="posts-title">Latest posts</div>
+                        <ul class="posts-list">
+                            <li><a href="/blog/life-upgrades/">Life upgrades (07-27)</a></li>
+                        </ul>
+                        <ul class="posts-list posts-list--archive">
+                            <li><a href="/archive/">Archive</a></li>
+                        </ul>
+                    <!-- /cms:posts --></div>
                     </div>
                 </div>
             </div>
@@ -187,7 +206,7 @@
             </div>
         </section>
 
-        <div class="footer footer-mobile"><!-- cms:updated -->Last updated 07-27-26<!-- /cms:updated --></div>
+        <div class="footer footer-mobile"><!-- cms:updated -->Last updated 07-28-26<!-- /cms:updated --></div>
     </main>
 
     <aside class="photo-column" aria-label="Photo">
@@ -196,7 +215,7 @@
     </aside>
     </div>
 
-    <div class="footer footer-desktop"><!-- cms:updated -->Last updated 07-27-26<!-- /cms:updated --></div>
+    <div class="footer footer-desktop"><!-- cms:updated -->Last updated 07-28-26<!-- /cms:updated --></div>
 
     <div class="now-playing" id="now-playing" aria-live="polite">Now playing &ldquo;Psychic Geography&rdquo; by dovs</div>
 
