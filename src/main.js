@@ -24,6 +24,14 @@ const nowPlaying = document.getElementById('now-playing');
 
         document.querySelectorAll('.accordion-trigger').forEach(trigger => {
             trigger.addEventListener('click', () => {
+                // "My setup" toggles the floating Kitdrop preview on desktop instead of
+                // expanding. Mobile falls through to the normal accordion behavior.
+                if (trigger.getAttribute('aria-controls') === 'accordion-setup' && !mobileBreakpoint.matches) {
+                    if (kitWindow.hidden) openKitdrop(trigger);
+                    else closeKitdrop();
+                    return;
+                }
+
                 const accordion = trigger.parentElement;
                 const content = accordion.querySelector('.accordion-content');
                 const isOpen = accordion.classList.contains('open');
@@ -54,12 +62,110 @@ const nowPlaying = document.getElementById('now-playing');
             const isMobile = mobileBreakpoint.matches;
             if (isMobile !== wasMobile) {
                 restartFadeUps();
+                if (isMobile) closeKitdrop();
                 wasMobile = isMobile;
             }
         }
 
         mobileBreakpoint.addEventListener('change', handleBreakpointChange);
         window.addEventListener('resize', handleBreakpointChange);
+
+        /* Kitdrop preview — floating, draggable window opened from "My setup" (desktop) */
+        const kitWindow = document.getElementById('kitdrop-window');
+        const kitBar = document.getElementById('kitdrop-bar');
+        const kitClose = document.getElementById('kitdrop-close');
+        const kitFrame = document.getElementById('kitdrop-frame');
+        let kitReturnFocus = null;
+        let kitHideTimer = null;
+
+        function clampWindow() {
+            // Keep the window within the viewport after opening or resizing.
+            const maxLeft = Math.max(0, window.innerWidth - kitWindow.offsetWidth);
+            const maxTop = Math.max(0, window.innerHeight - kitWindow.offsetHeight);
+            const left = Math.min(Math.max(parseFloat(kitWindow.style.left) || 0, 0), maxLeft);
+            const top = Math.min(Math.max(parseFloat(kitWindow.style.top) || 0, 0), maxTop);
+            kitWindow.style.left = left + 'px';
+            kitWindow.style.top = top + 'px';
+        }
+
+        function openKitdrop(trigger) {
+            if (!kitWindow || mobileBreakpoint.matches) return;
+            clearTimeout(kitHideTimer); // cancel any pending hide from a very recent close
+            kitReturnFocus = trigger || document.activeElement;
+
+            // Lazy-load the iframe on first open; keep it loaded afterwards.
+            if (!kitFrame.src && kitFrame.dataset.src) kitFrame.src = kitFrame.dataset.src;
+
+            kitWindow.hidden = false;
+            // Center it, then clamp into view.
+            kitWindow.style.left = ((window.innerWidth - kitWindow.offsetWidth) / 2) + 'px';
+            kitWindow.style.top = Math.max(24, (window.innerHeight - kitWindow.offsetHeight) / 2) + 'px';
+            clampWindow();
+
+            requestAnimationFrame(() => kitWindow.classList.add('open'));
+            document.addEventListener('keydown', onKitKeydown);
+            // Click anywhere outside the window closes it. Deferred so the opening
+            // click doesn't immediately trigger it as it bubbles to the document.
+            setTimeout(() => document.addEventListener('mousedown', onKitOutside), 0);
+            kitClose.focus();
+        }
+
+        function closeKitdrop() {
+            if (!kitWindow || kitWindow.hidden) return;
+            kitWindow.classList.remove('open');
+            document.removeEventListener('keydown', onKitKeydown);
+            document.removeEventListener('mousedown', onKitOutside);
+
+            // Hide after the fade-out. Cancellable, and guarded so a fast reopen
+            // (which re-adds .open) is never hidden by this stale timer.
+            clearTimeout(kitHideTimer);
+            kitHideTimer = setTimeout(() => {
+                if (!kitWindow.classList.contains('open')) kitWindow.hidden = true;
+            }, 320);
+
+            if (kitReturnFocus && typeof kitReturnFocus.focus === 'function') kitReturnFocus.focus();
+            kitReturnFocus = null;
+        }
+
+        function onKitKeydown(e) {
+            if (e.key === 'Escape') closeKitdrop();
+        }
+
+        function onKitOutside(e) {
+            if (!kitWindow.contains(e.target)) closeKitdrop();
+        }
+
+        if (kitWindow) {
+            kitClose.addEventListener('click', closeKitdrop);
+
+            // Drag by the top bar (pointer events). Ignore drags that start on the close button.
+            let dragging = false, startX = 0, startY = 0, startLeft = 0, startTop = 0;
+            kitBar.addEventListener('pointerdown', (e) => {
+                if (e.target.closest('.kitdrop-close')) return;
+                dragging = true;
+                startX = e.clientX;
+                startY = e.clientY;
+                startLeft = parseFloat(kitWindow.style.left) || 0;
+                startTop = parseFloat(kitWindow.style.top) || 0;
+                kitBar.setPointerCapture(e.pointerId);
+            });
+            kitBar.addEventListener('pointermove', (e) => {
+                if (!dragging) return;
+                const maxLeft = Math.max(0, window.innerWidth - kitWindow.offsetWidth);
+                const maxTop = Math.max(0, window.innerHeight - kitWindow.offsetHeight);
+                kitWindow.style.left = Math.min(Math.max(startLeft + (e.clientX - startX), 0), maxLeft) + 'px';
+                kitWindow.style.top = Math.min(Math.max(startTop + (e.clientY - startY), 0), maxTop) + 'px';
+            });
+            const endDrag = (e) => {
+                if (!dragging) return;
+                dragging = false;
+                try { kitBar.releasePointerCapture(e.pointerId); } catch (err) {}
+            };
+            kitBar.addEventListener('pointerup', endDrag);
+            kitBar.addEventListener('pointercancel', endDrag);
+
+            window.addEventListener('resize', () => { if (!kitWindow.hidden) clampWindow(); });
+        }
 
         /* Last.fm Now Playing */
         (function() {
