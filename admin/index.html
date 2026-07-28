@@ -59,6 +59,19 @@
         .toggle-row input{width:auto;margin:0}
         .toggle-row label{font-size:14px;color:var(--body);cursor:pointer}
         input[type=file]{display:none}
+        /* body block editor */
+        .add-row{display:flex;gap:8px}
+        .add-row .add{width:auto}
+        .block{display:flex;gap:8px;align-items:flex-start;margin-bottom:10px}
+        .block-main{flex:1}
+        .block-list{flex-direction:column;gap:8px;border:1px solid var(--border-soft);border-radius:8px;padding:12px}
+        .block-head{display:flex;align-items:flex-start;justify-content:space-between;width:100%}
+        .block-label{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);padding-top:3px}
+        .list-items{display:flex;flex-direction:column;gap:6px;width:100%}
+        .list-item{display:flex;gap:8px;align-items:flex-start}
+        .list-item .block-main{flex:1}
+        .sub-add{width:auto;align-self:flex-start;font-size:12px;padding:6px 11px}
+        .ibtn.linkbtn{font-size:12px}
         /* token screen */
         .gate{max-width:440px;margin:16vh auto 0;padding:0 24px}
         .gate h1{margin-bottom:12px}
@@ -163,9 +176,12 @@
         </section>
 
         <section>
-            <div class="label"><span>Body</span><span class="hint">links: &lt;a href="&hellip;"&gt;text&lt;/a&gt;</span></div>
-            <div id="postBodyList"></div>
-            <button class="add" data-add="postBody">+ Add paragraph</button>
+            <div class="label"><span>Body</span><span class="hint">select text, then 🔗 to add a link</span></div>
+            <div id="blocksList"></div>
+            <div class="add-row">
+                <button class="add" data-add="para">+ Paragraph</button>
+                <button class="add" data-add="list">+ Bulleted list</button>
+            </div>
         </section>
 
         <section>
@@ -299,7 +315,8 @@
             if (kind === 'thoughts') addText('thoughtsList', '', 2);
             if (kind === 'hobbies') addHobby({ label: '', url: '' });
             if (kind === 'setup') addSetup('');
-            if (kind === 'postBody') addText('postBodyList', '', 3);
+            if (kind === 'para') addParagraphBlock('');
+            if (kind === 'list') addListBlock(['']);
             markDirty();
         });
     });
@@ -522,10 +539,14 @@
         $('postTitle').value = post ? (post.title || '') : '';
         $('postSlug').value = post ? (post.slug || '') : '';
         $('slugEcho').textContent = (post && post.slug) || '…';
-        $('postBodyList').innerHTML = '';
+        $('blocksList').innerHTML = '';
         const body = (post && post.body) || [];
-        if (body.length) body.forEach((p) => addText('postBodyList', p, 3));
-        else addText('postBodyList', '', 3);
+        if (body.length) body.forEach((b) => {
+            const nb = normalizeBlock(b);
+            if (nb.type === 'ul') addListBlock(nb.items.length ? nb.items : ['']);
+            else addParagraphBlock(nb.text);
+        });
+        else addParagraphBlock('');
         currentImagePath = (post && post.image) || '';
         setImagePreview(currentImagePath ? `https://justinmartin.wiki/${currentImagePath}?t=${Date.now()}` : null);
         $('postPublished').checked = post ? !!post.published : true;
@@ -535,8 +556,110 @@
         setStatus(post ? ('Editing “' + ((post.title || '').trim() || 'Untitled') + '”') : 'New post');
     }
 
-    const collectPostBody = () => Array.from($('postBodyList').querySelectorAll('textarea'))
-        .map((t) => t.value.trim()).filter(Boolean);
+    // Body is a list of blocks: { type:'p', text } or { type:'ul', items:[] }.
+    // Legacy posts stored plain strings — treat those as paragraphs.
+    const normalizeBlock = (b) => {
+        if (typeof b === 'string') return { type: 'p', text: b };
+        if (b && b.type === 'ul') return { type: 'ul', items: Array.isArray(b.items) ? b.items : [] };
+        return { type: 'p', text: (b && b.text) || '' };
+    };
+
+    // Wrap the textarea's current selection (or a typed label) in an <a>. No raw HTML needed.
+    function insertLink(ta) {
+        const start = ta.selectionStart, end = ta.selectionEnd;
+        const selected = ta.value.slice(start, end);
+        let url = window.prompt('Link URL:', 'https://');
+        if (url === null) return;
+        url = url.trim();
+        if (!url) return;
+        let text = selected;
+        if (!text) { text = window.prompt('Link text:', '') || url; }
+        const anchor = '<a href="' + url.replace(/"/g, '&quot;') + '">' + text + '</a>';
+        ta.value = ta.value.slice(0, start) + anchor + ta.value.slice(end);
+        const pos = start + anchor.length;
+        ta.focus();
+        ta.setSelectionRange(pos, pos);
+        autosize(ta);
+        markDirty();
+    }
+
+    // Reorder/delete controls for a row within listEl, plus an optional link button for a text field.
+    function blockTools(row, listEl, taForLink) {
+        const tools = document.createElement('div');
+        tools.className = 'item-btns';
+        if (taForLink) {
+            const lb = document.createElement('button');
+            lb.type = 'button'; lb.className = 'ibtn linkbtn'; lb.textContent = '🔗'; lb.title = 'Insert link';
+            lb.addEventListener('click', () => insertLink(taForLink));
+            tools.appendChild(lb);
+        }
+        [['↑', () => { const p = row.previousElementSibling; if (p) { listEl.insertBefore(row, p); markDirty(); } }],
+         ['↓', () => { const n = row.nextElementSibling; if (n) { listEl.insertBefore(n, row); markDirty(); } }],
+         ['✕', () => { row.remove(); markDirty(); }]
+        ].forEach(([txt, fn]) => {
+            const b = document.createElement('button');
+            b.type = 'button'; b.className = 'ibtn'; b.textContent = txt;
+            b.addEventListener('click', fn);
+            tools.appendChild(b);
+        });
+        return tools;
+    }
+
+    function addParagraphBlock(value) {
+        const row = document.createElement('div');
+        row.className = 'block';
+        const ta = makeTextarea(value || '', 2);
+        const main = document.createElement('div');
+        main.className = 'block-main';
+        main.appendChild(ta);
+        row.appendChild(main);
+        row.appendChild(blockTools(row, $('blocksList'), ta));
+        row._getData = () => ({ type: 'p', text: ta.value.trim() });
+        $('blocksList').appendChild(row);
+        return row;
+    }
+
+    function addListBlock(items) {
+        const row = document.createElement('div');
+        row.className = 'block block-list';
+        const itemsWrap = document.createElement('div');
+        itemsWrap.className = 'list-items';
+        const addItem = (val) => {
+            const ir = document.createElement('div');
+            ir.className = 'list-item';
+            const ta = makeTextarea(val || '', 1);
+            const main = document.createElement('div');
+            main.className = 'block-main';
+            main.appendChild(ta);
+            ir.appendChild(main);
+            ir.appendChild(blockTools(ir, itemsWrap, ta));
+            itemsWrap.appendChild(ir);
+            return ir;
+        };
+        (items && items.length ? items : ['']).forEach(addItem);
+        const addBtn = document.createElement('button');
+        addBtn.type = 'button'; addBtn.className = 'add sub-add'; addBtn.textContent = '+ Add bullet';
+        addBtn.addEventListener('click', () => { addItem(''); markDirty(); });
+        const head = document.createElement('div');
+        head.className = 'block-head';
+        const label = document.createElement('div');
+        label.className = 'block-label'; label.textContent = 'Bulleted list';
+        head.appendChild(label);
+        head.appendChild(blockTools(row, $('blocksList'), null));
+        row.appendChild(head);
+        row.appendChild(itemsWrap);
+        row.appendChild(addBtn);
+        row._getData = () => ({
+            type: 'ul',
+            items: Array.from(itemsWrap.querySelectorAll('textarea')).map((t) => t.value.trim()).filter(Boolean)
+        });
+        $('blocksList').appendChild(row);
+        return row;
+    }
+
+    const collectPostBody = () => Array.from($('blocksList').children)
+        .map((row) => row._getData ? row._getData() : null)
+        .filter((b) => b && (b.type === 'p' ? b.text : b.items.length));
 
     function putFile(pathName, contentB64, message, fileSha) {
         const body = { message, content: contentB64, branch: BRANCH };

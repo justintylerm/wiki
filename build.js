@@ -80,6 +80,14 @@ const metaText = (s, max) => {
     return escapeHtml(clipped);
 };
 
+// Body blocks: { type:'p', text } or { type:'ul', items:[] }. Legacy posts stored
+// plain strings for paragraphs — normalize those so old posts keep rendering.
+const normalizeBlock = (b) => {
+    if (typeof b === 'string') return { type: 'p', text: b };
+    if (b && b.type === 'ul') return { type: 'ul', items: Array.isArray(b.items) ? b.items : [] };
+    return { type: 'p', text: (b && b.text) || '' };
+};
+
 // Pull the homepage's inline <style> so post pages are pixel-identical, no duplication.
 const sharedStyle = (html.match(/<style>[\s\S]*?<\/style>/) || [''])[0];
 
@@ -91,10 +99,20 @@ function renderPost(post) {
         ? `https://justinmartin.wiki/${post.image}`
         : 'https://justinmartin.wiki/assets/photo.webp';
 
-    // Body paragraphs reuse the bio's .bio p styling + fade-up stagger (delay-3..5).
-    const paras = (post.body || []).filter((p) => String(p).trim()).map((p, i) =>
-        `            <p class="fade-up delay-${Math.min(3 + i, 5)}">${p}</p>`
-    ).join('\n');
+    // Body blocks reuse the bio's .bio p styling and the homepage .thoughts-list bullets,
+    // with the fade-up stagger (delay-3..5) carried across blocks.
+    let delay = 3;
+    const bodyHtml = (post.body || []).map(normalizeBlock)
+        .filter((b) => b.type === 'ul' ? b.items.some((i) => String(i).trim()) : String(b.text).trim())
+        .map((b) => {
+            const d = Math.min(delay++, 5);
+            if (b.type === 'ul') {
+                const lis = b.items.filter((i) => String(i).trim())
+                    .map((i) => `                <li>${i}</li>`).join('\n');
+                return `            <ul class="thoughts-list fade-up delay-${d}">\n${lis}\n            </ul>`;
+            }
+            return `            <p class="fade-up delay-${d}">${b.text}</p>`;
+        }).join('\n');
 
     const photo = post.image ? `
     <aside class="photo-column" aria-label="Post image">
@@ -109,6 +127,8 @@ function renderPost(post) {
     <style>
         .back-link{text-decoration:none}
         .back-link:hover{opacity:.55}
+        .bio .thoughts-list{margin-bottom:20px}
+        .bio > :last-child{margin-bottom:0}
         @media (min-width:1101px){.no-photo .page{margin-right:auto}}
     </style>`;
 
@@ -143,7 +163,7 @@ function renderPost(post) {
     <main class="page">
         <div class="bio">
             <h1 class="bio-greeting fade-up delay-2">${title}</h1>
-${paras}
+${bodyHtml}
         </div>
 
         <div class="footer footer-mobile">${dateLine}</div>
