@@ -226,6 +226,8 @@ ${photo}
     <div class="footer footer-desktop">${dateLine}</div>
 
     <a class="now-playing back-link" href="/">&larr; Back</a>
+
+    <script src="/src/sounds.js" defer></script>
 </body>
 </html>
 `;

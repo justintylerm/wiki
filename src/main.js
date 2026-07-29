@@ -46,6 +46,8 @@ const nowPlaying = document.getElementById('now-playing');
                     trigger.setAttribute('aria-expanded', 'true');
                 }
 
+                if (window.uiSound) window.uiSound.play(isOpen ? 'collapse' : 'expand');
+
                 const anyOpen = document.querySelector('.accordion.open');
 
                 if (anyOpen) {
@@ -97,6 +99,7 @@ const nowPlaying = document.getElementById('now-playing');
 
         function openKitdrop(trigger) {
             if (!kitWindow || mobileBreakpoint.matches) return;
+            if (window.uiSound) window.uiSound.play('pop');
             clearTimeout(kitHideTimer); // cancel any pending hide from a very recent close
             kitReturnFocus = trigger || document.activeElement;
 
@@ -119,6 +122,7 @@ const nowPlaying = document.getElementById('now-playing');
 
         function closeKitdrop() {
             if (!kitWindow || kitWindow.hidden) return;
+            if (window.uiSound) window.uiSound.play('slide');
             kitWindow.classList.remove('open');
             document.removeEventListener('keydown', onKitKeydown);
             document.removeEventListener('mousedown', onKitOutside);
