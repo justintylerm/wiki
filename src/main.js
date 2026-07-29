@@ -78,6 +78,13 @@ const nowPlaying = document.getElementById('now-playing');
         let kitReturnFocus = null;
         let kitHideTimer = null;
 
+        // Hide the loading spinner once the iframe's page has loaded.
+        if (kitFrame) {
+            kitFrame.addEventListener('load', function () {
+                if (kitFrame.getAttribute('src')) kitWindow.classList.add('kit-loaded');
+            });
+        }
+
         function clampWindow() {
             // Keep the window within the viewport after opening or resizing.
             const maxLeft = Math.max(0, window.innerWidth - kitWindow.offsetWidth);
