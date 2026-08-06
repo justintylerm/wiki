@@ -2,7 +2,7 @@
   {
     "slug": "life-upgrades",
     "title": "Life upgrades",
-    "date": "07-28-26",
+    "date": "08-05-26",
     "body": [
       {
         "type": "p",
@@ -18,7 +18,7 @@
         ]
       }
     ],
-    "published": true,
+    "published": false,
     "image": "assets/posts/life-upgrades.webp"
   }
 ]
