@@ -67,7 +67,7 @@
         .posts-list a{color:var(--text-body);text-decoration:none;letter-spacing:-.012em;transition:color .2s ease}
         .posts-list a:hover{color:#000;text-decoration:underline;text-decoration-thickness:1px;text-underline-offset:3px}
         .posts-list--archive{margin-left:var(--tree-indent)}
-        .feed-window{position:fixed;z-index:900;left:0;top:0;width:clamp(560px,46vw,920px);max-width:calc(100vw - 60px);height:calc(100vh - 60px);background:var(--bg);border:0;box-shadow:var(--popup-shadow);display:flex;flex-direction:column;overflow:hidden;opacity:1;transform:translateX(calc(100% + 60px));transition:transform .4s cubic-bezier(.22,1,.36,1)}
+        .feed-window{position:fixed;z-index:900;right:30px;top:30px;width:clamp(560px,46vw,920px);max-width:calc(100vw - 60px);height:calc(100vh - 60px);background:var(--bg);border:1px solid var(--border);box-shadow:none;display:flex;flex-direction:column;overflow:hidden;opacity:1;transform:translateX(calc(100% + 60px));transition:transform .4s cubic-bezier(.22,1,.36,1)}
         .feed-window[hidden]{display:none}
         .feed-window.open{opacity:1;transform:none}
         .feed-bar{height:58px;display:flex;align-items:center;justify-content:space-between;gap:20px;padding:0 20px;border-bottom:1px solid rgba(0,0,0,.08);background:var(--bg);user-select:none;flex-shrink:0}
@@ -145,7 +145,7 @@
             .footer-mobile{display:block!important}
             .footer-desktop{display:none!important}
             .now-playing{display:none!important}
-            .feed-window{width:100vw;max-width:none;height:100dvh;left:0!important;top:0!important;box-shadow:none;opacity:0;transform:none;transition:opacity .22s ease}
+            .feed-window{width:100vw;max-width:none;height:100dvh;right:0;top:0;border:0;box-shadow:none;opacity:0;transform:none;transition:opacity .22s ease}
             .feed-window.open{opacity:1;transform:none}
             .feed-items{padding:0 24px 48px}
             .feed-item::after{left:-24px;right:-24px}
@@ -335,7 +335,7 @@
     </section>
 
     <script src="/src/sounds.js" defer></script>
-    <script src="src/main.js?v=20260805-5" defer></script>
+    <script src="src/main.js?v=20260805-9" defer></script>
     <script>
         // Defer analytics until after load + idle to keep the main thread clear for LCP/TBT.
         (function(){

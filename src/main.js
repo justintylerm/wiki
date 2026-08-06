@@ -1,6 +1,27 @@
 const nowPlaying = document.getElementById('now-playing');
         const fadeUpElements = Array.from(document.querySelectorAll('.fade-up'));
         const mobileBreakpoint = window.matchMedia('(max-width: 1100px)');
+        const accordions = document.querySelector('.accordions');
+        const nowPlayingSafeGap = 100;
+
+        function updateNowPlayingVisibility() {
+            if (!nowPlaying || !accordions) return;
+            const hasExpandedContent = Array.from(accordions.querySelectorAll('.accordion-content'))
+                .some((content) => content.getBoundingClientRect().height > 1);
+            if (!hasExpandedContent || mobileBreakpoint.matches) {
+                nowPlaying.classList.remove('hidden');
+                return;
+            }
+
+            const safeZoneTop = nowPlaying.getBoundingClientRect().top - nowPlayingSafeGap;
+            const accordionBottom = accordions.getBoundingClientRect().bottom;
+            nowPlaying.classList.toggle('hidden', accordionBottom > safeZoneTop);
+        }
+
+        if ('ResizeObserver' in window && accordions) {
+            const accordionResizeObserver = new ResizeObserver(updateNowPlayingVisibility);
+            accordionResizeObserver.observe(accordions);
+        }
 
         function restartFadeUps() {
             fadeUpElements.forEach((el) => {
@@ -47,14 +68,7 @@ const nowPlaying = document.getElementById('now-playing');
                 }
 
                 if (window.uiSound) window.uiSound.play(isOpen ? 'collapse' : 'expand');
-
-                const anyOpen = document.querySelector('.accordion.open');
-
-                if (anyOpen) {
-                    nowPlaying.classList.add('hidden');
-                } else {
-                    nowPlaying.classList.remove('hidden');
-                }
+                updateNowPlayingVisibility();
             });
         });
 
@@ -69,10 +83,12 @@ const nowPlaying = document.getElementById('now-playing');
                 }
                 wasMobile = isMobile;
             }
+            updateNowPlayingVisibility();
         }
 
         mobileBreakpoint.addEventListener('change', handleBreakpointChange);
         window.addEventListener('resize', handleBreakpointChange);
+        updateNowPlayingVisibility();
 
         /* Feed — a fixed stream of CMS thoughts and published notes */
         const feedWindow = document.getElementById('feed-window');
@@ -80,16 +96,6 @@ const nowPlaying = document.getElementById('now-playing');
         const feedScroll = document.getElementById('feed-scroll');
         let feedReturnFocus = null;
         let feedHideTimer = null;
-
-        function clampFeed() {
-            if (!feedWindow) return;
-            const maxLeft = Math.max(0, window.innerWidth - feedWindow.offsetWidth);
-            const maxTop = Math.max(0, window.innerHeight - feedWindow.offsetHeight);
-            const left = Math.min(Math.max(parseFloat(feedWindow.style.left) || 0, 0), maxLeft);
-            const top = Math.min(Math.max(parseFloat(feedWindow.style.top) || 0, 0), maxTop);
-            feedWindow.style.left = left + 'px';
-            feedWindow.style.top = top + 'px';
-        }
 
         function openFeed(trigger) {
             if (!feedWindow) return;
@@ -100,11 +106,6 @@ const nowPlaying = document.getElementById('now-playing');
             trigger.parentElement.classList.add('panel-open');
 
             feedWindow.hidden = false;
-            feedWindow.style.left = mobileBreakpoint.matches
-                ? '0px'
-                : Math.max(30, window.innerWidth - feedWindow.offsetWidth - 30) + 'px';
-            feedWindow.style.top = mobileBreakpoint.matches ? '0px' : '30px';
-            clampFeed();
             if (feedScroll) feedScroll.scrollTop = 0;
 
             requestAnimationFrame(() => feedWindow.classList.add('open'));
@@ -141,7 +142,6 @@ const nowPlaying = document.getElementById('now-playing');
 
         if (feedWindow) {
             feedClose.addEventListener('click', closeFeed);
-            window.addEventListener('resize', () => { if (!feedWindow.hidden) clampFeed(); });
         }
 
         /* Inline feed articles */
