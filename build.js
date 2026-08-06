@@ -32,11 +32,6 @@ inject('bio', content.bio.map((p, i) =>
     `\n            <p class="fade-up delay-${Math.min(3 + i, 5)}">${p}</p>\n`
 ).join('') + '        ');
 
-// Thoughts list
-inject('thoughts', '\n' + content.thoughts.map((t) =>
-    `                            <li>${t}</li>`
-).join('\n') + '\n                        ');
-
 // Hobbies tags (optional url per tag)
 inject('hobbies', '\n' + content.hobbies.map((h) => {
     const label = h.label;
@@ -134,19 +129,19 @@ const renderFeedBlock = (rawBlock) => {
     return block.text ? `<p class="feed-article-p">${block.text}</p>` : '';
 };
 
-// posts.json is the single source of truth for both the "Latest posts" tree below
-// and the blog page generator further down. Load it once, here, and reuse.
-let posts = [];
-const postsPath = path.join(root, 'posts.json');
-if (fs.existsSync(postsPath)) {
+// updates.json is the single chronological source for both lean statuses and full
+// notes. The admin writes both formats here so navigation never grows per post.
+let updates = [];
+const updatesPath = path.join(root, 'updates.json');
+if (fs.existsSync(updatesPath)) {
     try {
-        posts = JSON.parse(fs.readFileSync(postsPath, 'utf8'));
+        updates = JSON.parse(fs.readFileSync(updatesPath, 'utf8'));
     } catch (err) {
-        console.error('posts.json is not valid JSON:', err.message);
+        console.error('updates.json is not valid JSON:', err.message);
         process.exit(1);
     }
 }
-if (!Array.isArray(posts)) posts = [];
+if (!Array.isArray(updates)) updates = [];
 
 // ---------------------------------------------------------------------------
 // Latest posts tree → cms:posts (top 3 published, newest first)
@@ -159,20 +154,39 @@ const mmdd = (date) => {
     const [mm, dd] = String(date == null ? '' : date).split('-');
     return mm && dd ? `${mm}-${dd}` : '';
 };
-// "MM-DD-YY" -> "YY-MM-DD" so plain string compare sorts chronologically.
-const postSortKey = (p) => {
-    const [mm, dd, yy] = String(p && p.date ? p.date : '').split('-');
-    return `${yy || ''}-${mm || ''}-${dd || ''}`;
+const updateTimestamp = (update) => {
+    const created = Date.parse(update && update.createdAt ? update.createdAt : '');
+    if (Number.isFinite(created)) return created;
+    const [mm, dd, yy] = String(update && update.date ? update.date : '').split('-');
+    return Date.parse(`20${yy || '00'}-${mm || '01'}-${dd || '01'}T12:00:00-05:00`) || 0;
 };
 
-const publishedPosts = posts
-    .filter((p) => p && p.published && p.slug)
-    .sort((a, b) => postSortKey(b).localeCompare(postSortKey(a)));
+const updateDate = (update) => {
+    const date = new Date(update && update.createdAt ? update.createdAt : '');
+    if (!Number.isNaN(date.getTime())) {
+        return new Intl.DateTimeFormat('en-US', {
+            timeZone: 'America/Chicago', month: '2-digit', day: '2-digit', year: '2-digit'
+        }).format(date).replace(/\//g, '-');
+    }
+    return String(update && update.date ? update.date : '');
+};
+
+const publishedUpdates = updates
+    .filter((update) => update && update.published && (update.type === 'status' || update.type === 'note'))
+    .sort((a, b) => updateTimestamp(b) - updateTimestamp(a));
+const publishedPosts = publishedUpdates.filter((update) => update.type === 'note' && update.slug);
+const publishedStatuses = publishedUpdates.filter((update) => update.type === 'status' && update.text);
+
+// The compact mobile accordion shows the newest lean statuses. Desktop opens the
+// full mixed feed instead.
+inject('thoughts', '\n' + publishedStatuses.slice(0, 3).map((status) =>
+    `                            <li>${status.text}</li>`
+).join('\n') + '\n                        ');
 
 const latest = publishedPosts.slice(0, 3);
 
 const postRows = latest.map((p) => {
-    const md = mmdd(p.date);
+    const md = mmdd(updateDate(p));
     const label = md ? `${escapeHtml(p.title)} (${escapeHtml(md)})` : escapeHtml(p.title);
     return `                            <li><a href="/?post=${encodeURIComponent(p.slug)}">${label}</a></li>`;
 }).join('\n');
@@ -189,22 +203,20 @@ ${postRows}
 
 // ---------------------------------------------------------------------------
 // Feed window → cms:feed
-// The homepage thoughts become status entries and published posts become richer
-// note cards. This keeps the mockup connected to the two existing CMS sources.
+// Statuses and full notes are rendered from the same ordered update stream.
 // ---------------------------------------------------------------------------
-const feedDate = escapeHtml(content.lastUpdated || stamp);
-const statusCards = (Array.isArray(content.thoughts) ? content.thoughts : []).map((thought) => {
+const renderStatusCard = (update) => {
     // The compact mobile accordion owns the unique observation-count id; the
     // feed uses a class so the live count can update in both places.
-    const status = String(thought).replace(/id=(['"])inat-count\1/g, 'class="inat-count"');
-    const likeId = `update-${stableLikeHash(thought)}`;
+    const status = String(update.text).replace(/id=(['"])inat-count\1/g, 'class="inat-count"');
+    const likeId = `update-${update.id || stableLikeHash(update.text)}`;
     return `                <article class="feed-item feed-item--status" data-feed-id="${likeId}">
-                    <div class="feed-meta"><time>${feedDate}</time></div>
+                    <div class="feed-meta"><time>${escapeHtml(updateDate(update))}</time></div>
                     <p class="feed-status">${status}</p>${renderLikeButton(likeId, 'update')}
                 </article>`;
-});
+};
 
-const noteCards = publishedPosts.map((post) => {
+const renderNoteCard = (post) => {
     const blocks = (Array.isArray(post.body) ? post.body : []).map(normalizeBlock);
     const summaryIndex = blocks.findIndex((block) => block.type === 'p' && String(block.text).trim());
     const summary = summaryIndex >= 0 ? blocks[summaryIndex].text : '';
@@ -229,17 +241,15 @@ const noteCards = publishedPosts.map((post) => {
                     </div>` : '';
     const likeId = `note-${post.slug}`;
     return `                <article class="feed-item feed-item--post" id="post-${escapeHtml(post.slug)}" data-post-slug="${escapeHtml(post.slug)}" data-feed-id="${escapeHtml(likeId)}">
-                    <div class="feed-meta"><time>${escapeHtml(post.date || '')}</time></div>
+                    <div class="feed-meta"><time>${escapeHtml(updateDate(post))}</time></div>
                     <h2 class="feed-post-title">${escapeHtml(post.title || 'Untitled')}</h2>
                     ${summary ? `<p class="feed-post-summary">${summary}</p>` : ''}${image}${expandable}${renderLikeButton(likeId, 'note')}
                 </article>`;
-});
+};
 
-// Put the newest status first, then the latest note, then the remaining statuses.
-// This makes the initial mockup read like a mixed social stream instead of two lists.
-const feedCards = statusCards.length
-    ? [statusCards[0], ...noteCards, ...statusCards.slice(1)]
-    : noteCards;
+const feedCards = publishedUpdates.map((update) => update.type === 'status'
+    ? renderStatusCard(update)
+    : renderNoteCard(update));
 inject('feed', `\n${feedCards.join('\n')}\n            `);
 
 fs.writeFileSync(path.join(root, 'index.html'), html);

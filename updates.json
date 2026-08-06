@@ -1,7 +1,10 @@
 [
   {
+    "id": "life-upgrades",
+    "type": "note",
     "slug": "life-upgrades",
     "title": "Life upgrades",
+    "createdAt": "2026-08-05T21:01:42-05:00",
     "date": "08-05-26",
     "body": [
       {
@@ -20,5 +23,26 @@
     ],
     "published": false,
     "image": "assets/posts/life-upgrades.webp"
+  },
+  {
+    "id": "buek70",
+    "type": "status",
+    "text": "Current plant observations: <a href=\"https://www.inaturalist.org/observations?user_id=justintylerm&verifiable=any\" target=\"_blank\" rel=\"noopener noreferrer\"><span id=\"inat-count\">33</span></a>",
+    "createdAt": "2026-07-28T12:46:23-05:00",
+    "published": true
+  },
+  {
+    "id": "182802h",
+    "type": "status",
+    "text": "Picked up the <a href=\"https://www.amazon.com/XTEINK-X4-Ultra-Thin-Magnetic-Ready-Distraction-Free/dp/B0GPXPK65X\" target=\"_blank\" rel=\"noopener noreferrer\">XTEINK X4</a>. E-Ink is magic. Finished <a href=\"https://www.goodreads.com/book/show/70401.On_the_Road\" target=\"_blank\" rel=\"noopener noreferrer\">On the Road</a> recently and it rules.",
+    "createdAt": "2026-07-28T12:46:22-05:00",
+    "published": true
+  },
+  {
+    "id": "1a8gi4f",
+    "type": "status",
+    "text": "We are living through the best time in history to be making things online.",
+    "createdAt": "2026-07-28T12:46:21-05:00",
+    "published": true
   }
 ]
