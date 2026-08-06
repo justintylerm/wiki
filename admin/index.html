@@ -40,12 +40,22 @@
         .status.err{color:#c0392b}
         .status.ok{color:#1e7a3c}
         .signout{border:none;background:none;font-family:inherit;font-size:12px;color:var(--muted);cursor:pointer;text-decoration:underline;text-underline-offset:3px}
-        /* post management */
-        .nav{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:30px}
+        /* update management */
+        .nav{display:flex;gap:6px;margin-bottom:30px}
         .nav button{border:1px solid var(--border);background:none;border-radius:999px;font-family:inherit;font-size:13px;letter-spacing:-.01em;color:var(--body);padding:6px 13px;cursor:pointer;max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
         .nav button:hover{border-color:rgba(0,0,0,.3);color:var(--text)}
         .nav button.active{background:#000;color:#fff;border-color:#000}
         .nav .newbtn{border-style:dashed;color:var(--muted)}
+        .update-actions{display:flex;gap:8px;margin-bottom:18px}
+        .update-actions .add{width:auto}
+        .updates-list{border-top:1px solid var(--border-soft)}
+        .update-row{width:100%;display:grid;grid-template-columns:54px minmax(0,1fr) auto;align-items:center;gap:12px;padding:13px 0;border:0;border-bottom:1px solid var(--border-soft);background:none;color:inherit;font-family:inherit;text-align:left;cursor:pointer}
+        .update-row:hover .update-row-title{color:var(--muted)}
+        .update-kind{color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.05em}
+        .update-row-title{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:14px;transition:color .15s ease}
+        .update-row-meta{color:var(--muted);font-size:11px;white-space:nowrap}
+        .empty-state{padding:26px 0;color:var(--muted);font-size:13px}
+        .editor-type{color:var(--muted);font-size:12px;margin-bottom:28px}
         .img-field{display:flex;align-items:flex-start;gap:14px}
         .img-preview{width:96px;height:96px;border-radius:8px;object-fit:cover;border:1px solid var(--border);background:rgba(0,0,0,.03);flex-shrink:0}
         .img-preview.empty{display:none}
@@ -84,6 +94,7 @@
         .gate .err-msg{color:#c0392b;font-size:13px;margin-top:12px}
         .hidden{display:none!important}
         code{font-size:12.5px;background:rgba(0,0,0,.05);padding:1px 5px;border-radius:4px}
+        @media(max-width:560px){.update-row{grid-template-columns:48px minmax(0,1fr)}.update-row-meta{grid-column:2}.update-actions{flex-wrap:wrap}}
     </style>
 </head>
 <body>
@@ -127,12 +138,6 @@
     </section>
 
     <section>
-        <div class="label"><span>What's on my mind</span><span class="hint">one bullet per item</span></div>
-        <div id="thoughtsList"></div>
-        <button class="add" data-add="thoughts">+ Add thought</button>
-    </section>
-
-    <section>
         <div class="label"><span>Hobbies and interests</span><span class="hint">URL optional</span></div>
         <div id="hobbiesList"></div>
         <button class="add" data-add="hobbies">+ Add hobby</button>
@@ -151,21 +156,38 @@
 
     </div><!-- /homeView -->
 
-    <div id="postView" class="hidden">
-        <h1 id="postHeading">New post</h1>
-        <div class="sub">Appears inline in the Feed &middot; legacy blog URL redirects here &middot; goes live about a minute after publishing<span id="slugEcho" class="hidden"></span></div>
+    <div id="updatesView" class="hidden">
+        <h1>What's on my mind</h1>
+        <div class="sub">Statuses and full notes in one stream &middot; newest first</div>
+        <div class="update-actions">
+            <button class="add" type="button" id="newStatus">+ Status update</button>
+            <button class="add" type="button" id="newNote">+ Full note</button>
+        </div>
+        <div class="updates-list" id="updatesList"></div>
+    </div><!-- /updatesView -->
 
-        <section>
+    <div id="postView" class="hidden">
+        <h1 id="postHeading">New update</h1>
+        <div class="sub" id="editorSub">Appears in What's on my mind &middot; goes live about a minute after publishing</div>
+        <div class="editor-type" id="editorType"></div>
+
+        <section class="status-only hidden">
+            <div class="label"><span>Status</span><span class="hint">select text, then 🔗 to add a link</span></div>
+            <textarea id="statusText" rows="4" placeholder="What's on your mind?"></textarea>
+            <button type="button" class="link-btn" id="statusLink">Add link to selected text</button>
+        </section>
+
+        <section class="note-only">
             <div class="label"><span>Title</span><span class="hint">the big heading</span></div>
             <input type="text" id="postTitle" placeholder="Post title">
         </section>
 
-        <section>
+        <section class="note-only">
             <div class="label"><span>URL slug</span><span class="hint">auto from title, editable</span></div>
             <input type="text" id="postSlug" placeholder="my-post">
         </section>
 
-        <section>
+        <section class="note-only">
             <div class="label"><span>Preview image</span><span class="hint">optional &middot; shown before expansion</span></div>
             <div class="img-field">
                 <img class="img-preview empty" id="imgPreview" alt="">
@@ -177,7 +199,7 @@
             </div>
         </section>
 
-        <section>
+        <section class="note-only">
             <div class="label"><span>Body</span><span class="hint">select text, then 🔗 to add a link</span></div>
             <div id="blocksList"></div>
             <div class="add-row">
@@ -198,7 +220,7 @@
         </section>
 
         <section>
-            <button type="button" class="link-btn danger" id="postDelete" style="display:none">Delete this post</button>
+            <button type="button" class="link-btn danger" id="postDelete" style="display:none">Delete this update</button>
         </section>
     </div><!-- /postView -->
 
@@ -220,18 +242,19 @@
     const $ = (id) => document.getElementById(id);
     const gate = $('gate'), editor = $('editor'), statusEl = $('status'), publishBtn = $('publishBtn');
 
-    const homeView = $('homeView'), postView = $('postView'), navEl = $('nav');
+    const homeView = $('homeView'), updatesView = $('updatesView'), postView = $('postView'), navEl = $('nav');
 
     let token = localStorage.getItem(TOKEN_KEY) || '';
     let sha = null;          // sha of content.json for safe updates
     let dirty = false;
     let loadedContent = null; // last-loaded homepage content, for discard-on-switch
 
-    // --- blog post state ---
-    let posts = [];           // array from posts.json
-    let postsSha = null;      // sha of posts.json for safe updates
-    let mode = 'home';        // 'home' | 'post'
-    let editingIndex = -1;    // index of the post being edited, -1 = new
+    // --- What's on my mind state ---
+    let updates = [];         // statuses and full notes from updates.json
+    let updatesSha = null;    // sha of updates.json for safe updates
+    let mode = 'home';        // 'home' | 'updates' | 'editor'
+    let editingIndex = -1;    // index of the update being edited, -1 = new
+    let editingType = 'status';
     let currentImagePath = '';// existing image path on the post being edited
     let pendingImage = null;  // { base64, ext } staged upload, if any
     let slugTouched = false;  // has the user hand-edited the slug?
@@ -314,11 +337,10 @@
     };
     const addSetup = (s) => itemRow($('setupList'), [makeInput(s, 'Tool name')]);
 
-    document.querySelectorAll('.add').forEach((btn) => {
+    document.querySelectorAll('.add[data-add]').forEach((btn) => {
         btn.addEventListener('click', () => {
             const kind = btn.dataset.add;
             if (kind === 'bio') addText('bioList', '', 2);
-            if (kind === 'thoughts') addText('thoughtsList', '', 2);
             if (kind === 'hobbies') addHobby({ label: '', url: '' });
             if (kind === 'setup') addSetup('');
             if (kind === 'para') addParagraphBlock('');
@@ -337,8 +359,6 @@
         autosize($('greeting'));
         $('bioList').innerHTML = '';
         c.bio.forEach((p) => addText('bioList', p, 2));
-        $('thoughtsList').innerHTML = '';
-        c.thoughts.forEach((t) => addText('thoughtsList', t, 2));
         $('hobbiesList').innerHTML = '';
         c.hobbies.forEach(addHobby);
         $('setupList').innerHTML = '';
@@ -372,7 +392,6 @@
         return {
             greeting: $('greeting').value.trim(),
             bio: texts('bioList'),
-            thoughts: texts('thoughtsList'),
             hobbies: Array.from($('hobbiesList').children).map((row) => {
                 const [label, url] = row.querySelectorAll('input');
                 const h = { label: label.value.trim() };
@@ -435,7 +454,7 @@
             publishBtn.disabled = false;
         }
     }
-    const doPublish = () => { if (mode === 'post') publishPost(); else publish(); };
+    const doPublish = () => { if (mode === 'editor') publishUpdate(); else publish(); };
     publishBtn.addEventListener('click', doPublish);
     document.addEventListener('keydown', (e) => {
         if ((e.metaKey || e.ctrlKey) && e.key === 's') {
@@ -445,7 +464,7 @@
     });
     window.addEventListener('beforeunload', (e) => { if (dirty) e.preventDefault(); });
 
-    // ---------- posts (blog) ----------
+    // ---------- What's on my mind updates ----------
     const slugify = (s) => String(s).toLowerCase()
         .replace(/<[^>]*>/g, '')
         .replace(/[^\w\s-]/g, '')
@@ -458,14 +477,14 @@
         timeZone: 'America/Chicago', month: '2-digit', day: '2-digit', year: '2-digit'
     }).format(new Date()).replace(/\//g, '-');
 
-    async function loadPosts() {
-        const res = await gh(`/contents/posts.json?ref=${BRANCH}&t=${Date.now()}`);
-        if (res.status === 404) { posts = []; postsSha = null; return; }
-        if (!res.ok) throw new Error('posts load failed (' + res.status + ')');
+    async function loadUpdates() {
+        const res = await gh(`/contents/updates.json?ref=${BRANCH}&t=${Date.now()}`);
+        if (res.status === 404) { updates = []; updatesSha = null; return; }
+        if (!res.ok) throw new Error('updates load failed (' + res.status + ')');
         const data = await res.json();
-        postsSha = data.sha;
-        try { posts = JSON.parse(b64decode(data.content)); } catch (e) { posts = []; }
-        if (!Array.isArray(posts)) posts = [];
+        updatesSha = data.sha;
+        try { updates = JSON.parse(b64decode(data.content)); } catch (e) { updates = []; }
+        if (!Array.isArray(updates)) updates = [];
     }
 
     function renderNav() {
@@ -480,36 +499,106 @@
             navEl.appendChild(b);
         };
         mk('Homepage', switchToHome, { active: mode === 'home' });
-        posts.forEach((p, i) => {
-            const label = (p.title && p.title.trim()) || 'Untitled';
-            mk(label + (p.published ? '' : ' · draft'), () => switchToPost(i),
-               { active: mode === 'post' && editingIndex === i });
-        });
-        mk('+ New post', () => switchToPost(-1),
-           { cls: 'newbtn', active: mode === 'post' && editingIndex === -1 });
+        mk("What's on my mind", switchToUpdates, { active: mode !== 'home' });
     }
 
     const guardDirty = () => !dirty || confirm('You have unpublished changes. Discard them?');
+
+    const stripHtml = (value) => {
+        const el = document.createElement('div');
+        el.innerHTML = String(value || '');
+        return (el.textContent || '').replace(/\s+/g, ' ').trim();
+    };
+
+    const updateTime = (update) => {
+        const parsed = Date.parse(update && update.createdAt ? update.createdAt : '');
+        if (Number.isFinite(parsed)) return parsed;
+        const [mm, dd, yy] = String(update && update.date ? update.date : '').split('-');
+        return Date.parse(`20${yy || '00'}-${mm || '01'}-${dd || '01'}T12:00:00-05:00`) || 0;
+    };
+
+    const displayDate = (update) => {
+        if (update && update.createdAt) {
+            const date = new Date(update.createdAt);
+            if (!Number.isNaN(date.getTime())) return new Intl.DateTimeFormat('en-US', {
+                timeZone: 'America/Chicago', month: '2-digit', day: '2-digit', year: '2-digit'
+            }).format(date).replace(/\//g, '-');
+        }
+        return (update && update.date) || '';
+    };
+
+    function renderUpdatesList() {
+        const list = $('updatesList');
+        list.innerHTML = '';
+        const ordered = updates.map((update, index) => ({ update, index }))
+            .sort((a, b) => updateTime(b.update) - updateTime(a.update));
+        if (!ordered.length) {
+            const empty = document.createElement('div');
+            empty.className = 'empty-state';
+            empty.textContent = 'No updates yet.';
+            list.appendChild(empty);
+            return;
+        }
+        ordered.forEach(({ update, index }) => {
+            const isStatus = update.type === 'status';
+            const row = document.createElement('button');
+            row.type = 'button';
+            row.className = 'update-row';
+            const kind = document.createElement('span');
+            kind.className = 'update-kind';
+            kind.textContent = isStatus ? 'Status' : 'Note';
+            const title = document.createElement('span');
+            title.className = 'update-row-title';
+            title.textContent = isStatus ? (stripHtml(update.text) || 'Empty status') : ((update.title || '').trim() || 'Untitled note');
+            const meta = document.createElement('span');
+            meta.className = 'update-row-meta';
+            meta.textContent = displayDate(update) + (update.published ? '' : ' · draft');
+            row.appendChild(kind); row.appendChild(title); row.appendChild(meta);
+            row.addEventListener('click', () => switchToUpdate(index));
+            list.appendChild(row);
+        });
+    }
 
     function switchToHome() {
         if (mode === 'home' || !guardDirty()) return;
         mode = 'home';
         postView.classList.add('hidden');
+        updatesView.classList.add('hidden');
         homeView.classList.remove('hidden');
         if (loadedContent) render(loadedContent);
         renderNav();
     }
 
-    function switchToPost(i) {
-        if (mode === 'post' && editingIndex === i) return;
+    function switchToUpdates() {
+        if (mode === 'updates') return;
         if (!guardDirty()) return;
-        mode = 'post';
-        editingIndex = i;
+        mode = 'updates';
+        editingIndex = -1;
+        dirty = false;
+        publishBtn.disabled = true;
         homeView.classList.add('hidden');
+        postView.classList.add('hidden');
+        updatesView.classList.remove('hidden');
+        renderUpdatesList();
+        renderNav();
+        setStatus('Up to date');
+    }
+
+    function switchToUpdate(i, type) {
+        if (mode === 'editor' && editingIndex === i && (!type || editingType === type)) return;
+        if (!guardDirty()) return;
+        mode = 'editor';
+        editingIndex = i;
+        editingType = i >= 0 ? (updates[i].type === 'status' ? 'status' : 'note') : (type || 'status');
+        homeView.classList.add('hidden');
+        updatesView.classList.add('hidden');
         postView.classList.remove('hidden');
-        renderPostForm(i >= 0 ? posts[i] : null);
+        renderUpdateForm(i >= 0 ? updates[i] : null);
         renderNav();
     }
+
+    $('newStatus').addEventListener('click', () => switchToUpdate(-1, 'status'));
+    $('newNote').addEventListener('click', () => switchToUpdate(-1, 'note'));
 
     function setImagePreview(url) {
         const img = $('imgPreview');
@@ -542,32 +631,43 @@
         });
     }
 
-    function renderPostForm(post) {
+    function renderUpdateForm(post) {
+        const isStatus = editingType === 'status';
         pendingImage = null;
         slugTouched = !!(post && post.slug);
-        $('postHeading').textContent = post ? 'Edit post' : 'New post';
-        $('postTitle').value = post ? (post.title || '') : '';
-        $('postSlug').value = post ? (post.slug || '') : '';
-        $('slugEcho').textContent = (post && post.slug) || '…';
+        $('postHeading').textContent = post ? 'Edit update' : 'New update';
+        $('editorType').textContent = isStatus ? 'Status update' : 'Full note';
+        $('editorSub').textContent = isStatus
+            ? "A lean update in the What's on my mind stream · goes live about a minute after publishing"
+            : "A full note in the What's on my mind stream · legacy blog URL redirects here";
+        document.querySelectorAll('.status-only').forEach((el) => el.classList.toggle('hidden', !isStatus));
+        document.querySelectorAll('.note-only').forEach((el) => el.classList.toggle('hidden', isStatus));
+        $('statusText').value = isStatus && post ? (post.text || '') : '';
+        autosize($('statusText'));
+        $('postTitle').value = !isStatus && post ? (post.title || '') : '';
+        $('postSlug').value = !isStatus && post ? (post.slug || '') : '';
         $('blocksList').innerHTML = '';
-        const body = (post && post.body) || [];
-        if (body.length) body.forEach((b) => {
-            const nb = normalizeBlock(b);
-            if (nb.type === 'ul') addListBlock(nb.items.length ? nb.items : ['']);
-            else if (nb.type === 'heading') addTextBlock('heading', nb.text, 'Heading', 1);
-            else if (nb.type === 'quote') addTextBlock('quote', nb.text, 'Quote', 2);
-            else if (nb.type === 'image') addImageBlock(nb);
-            else if (nb.type === 'gallery') addGalleryBlock(nb.images.length ? nb.images : [{}]);
-            else addParagraphBlock(nb.text);
-        });
-        else addParagraphBlock('');
-        currentImagePath = (post && post.image) || '';
+        if (!isStatus) {
+            const body = (post && post.body) || [];
+            if (body.length) body.forEach((b) => {
+                const nb = normalizeBlock(b);
+                if (nb.type === 'ul') addListBlock(nb.items.length ? nb.items : ['']);
+                else if (nb.type === 'heading') addTextBlock('heading', nb.text, 'Heading', 1);
+                else if (nb.type === 'quote') addTextBlock('quote', nb.text, 'Quote', 2);
+                else if (nb.type === 'image') addImageBlock(nb);
+                else if (nb.type === 'gallery') addGalleryBlock(nb.images.length ? nb.images : [{}]);
+                else addParagraphBlock(nb.text);
+            });
+            else addParagraphBlock('');
+        }
+        currentImagePath = (!isStatus && post && post.image) || '';
         setImagePreview(currentImagePath ? `https://justinmartin.wiki/${currentImagePath}?t=${Date.now()}` : null);
         $('postPublished').checked = post ? !!post.published : true;
         $('postDelete').style.display = post ? '' : 'none';
         dirty = false;
         publishBtn.disabled = true;
-        setStatus(post ? ('Editing “' + ((post.title || '').trim() || 'Untitled') + '”') : 'New post');
+        const label = isStatus ? stripHtml(post && post.text) : ((post && post.title) || '');
+        setStatus(post ? ('Editing “' + (label || (isStatus ? 'Empty status' : 'Untitled note')) + '”') : ('New ' + (isStatus ? 'status' : 'note')));
     }
 
     // Body is a list of structured content blocks. Legacy strings remain paragraphs.
@@ -833,16 +933,16 @@
         return gh(`/contents/${pathName}`, { method: 'PUT', body: JSON.stringify(body) });
     }
 
-    async function savePosts(arr, message) {
+    async function saveUpdates(arr, message) {
         const payload = () => b64encode(JSON.stringify(arr, null, 2) + '\n');
-        let res = await putFile('posts.json', payload(), message, postsSha);
+        let res = await putFile('updates.json', payload(), message, updatesSha);
         if (res.status === 409 || res.status === 422) { // sha stale — refetch and retry once
-            const cur = await gh(`/contents/posts.json?ref=${BRANCH}`);
-            postsSha = cur.ok ? (await cur.json()).sha : null;
-            res = await putFile('posts.json', payload(), message, postsSha);
+            const cur = await gh(`/contents/updates.json?ref=${BRANCH}`);
+            updatesSha = cur.ok ? (await cur.json()).sha : null;
+            res = await putFile('updates.json', payload(), message, updatesSha);
         }
         if (!res.ok) throw new Error('publish failed (' + res.status + ')');
-        postsSha = (await res.json()).content.sha;
+        updatesSha = (await res.json()).content.sha;
     }
 
     async function uploadImage(pathName, base64) {
@@ -871,13 +971,48 @@
         return body;
     }
 
-    async function publishPost() {
+    async function publishUpdate() {
+        const existing = editingIndex >= 0 ? updates[editingIndex] : null;
+        if (editingType === 'status') {
+            const text = $('statusText').value.trim();
+            if (!text) { setStatus('Write the status first', 'err'); return; }
+            publishBtn.disabled = true;
+            setStatus('Publishing…');
+            try {
+                const statusUpdate = {
+                    id: (existing && existing.id) || ('s-' + Date.now().toString(36)),
+                    type: 'status',
+                    text,
+                    createdAt: (existing && existing.createdAt) || new Date().toISOString(),
+                    published: $('postPublished').checked
+                };
+                const next = updates.slice();
+                if (editingIndex >= 0) next[editingIndex] = statusUpdate; else next.push(statusUpdate);
+                next.sort((a, b) => updateTime(b) - updateTime(a));
+                await saveUpdates(next, (editingIndex >= 0 ? 'Update status: ' : 'Add status: ') + statusUpdate.id);
+                updates = next;
+                dirty = false;
+                mode = 'updates';
+                editingIndex = -1;
+                postView.classList.add('hidden');
+                updatesView.classList.remove('hidden');
+                renderUpdatesList();
+                renderNav();
+                setStatus('Published, deploying…');
+                pollDeploy();
+            } catch (err) {
+                setStatus(err.message, 'err');
+                publishBtn.disabled = false;
+            }
+            return;
+        }
+
         const title = $('postTitle').value.trim();
         const slug = slugify($('postSlug').value.trim() || title);
         if (!title) { setStatus('Add a title first', 'err'); return; }
         if (!slug) { setStatus('Add a valid URL slug', 'err'); return; }
-        if (posts.some((p, i) => i !== editingIndex && p.slug === slug)) {
-            setStatus('Another post already uses “' + slug + '”', 'err'); return;
+        if (updates.some((p, i) => i !== editingIndex && p.type !== 'status' && p.slug === slug)) {
+            setStatus('Another note already uses “' + slug + '”', 'err'); return;
         }
         publishBtn.disabled = true;
         setStatus('Publishing…');
@@ -888,18 +1023,29 @@
                 await uploadImage(imagePath, pendingImage.base64);
             }
             const body = await prepareBodyMedia(collectPostBody(), slug);
-            const post = { slug, title, date: todayStamp(), body, published: $('postPublished').checked };
+            const post = {
+                id: (existing && existing.id) || slug,
+                type: 'note',
+                slug,
+                title,
+                createdAt: (existing && existing.createdAt) || new Date().toISOString(),
+                date: (existing && existing.date) || todayStamp(),
+                body,
+                published: $('postPublished').checked
+            };
             if (imagePath) post.image = imagePath;
-            const next = posts.slice();
+            const next = updates.slice();
             if (editingIndex >= 0) next[editingIndex] = post; else next.push(post);
-            await savePosts(next, (editingIndex >= 0 ? 'Update post: ' : 'Add post: ') + slug);
-            posts = next;
-            editingIndex = editingIndex >= 0 ? editingIndex : posts.length - 1;
-            currentImagePath = imagePath;
-            pendingImage = null;
+            next.sort((a, b) => updateTime(b) - updateTime(a));
+            await saveUpdates(next, (editingIndex >= 0 ? 'Update note: ' : 'Add note: ') + slug);
+            updates = next;
             dirty = false;
+            mode = 'updates';
+            editingIndex = -1;
+            postView.classList.add('hidden');
+            updatesView.classList.remove('hidden');
+            renderUpdatesList();
             renderNav();
-            $('slugEcho').textContent = slug;
             setStatus('Published, deploying…');
             pollDeploy();
         } catch (err) {
@@ -909,12 +1055,14 @@
     }
 
     $('postTitle').addEventListener('input', () => {
-        if (!slugTouched) { const s = slugify($('postTitle').value); $('postSlug').value = s; $('slugEcho').textContent = s || '…'; }
+        if (!slugTouched) $('postSlug').value = slugify($('postTitle').value);
         markDirty();
     });
     $('postSlug').addEventListener('input', () => {
-        slugTouched = true; $('slugEcho').textContent = slugify($('postSlug').value) || '…'; markDirty();
+        slugTouched = true; markDirty();
     });
+    $('statusText').addEventListener('input', () => { autosize($('statusText')); markDirty(); });
+    $('statusLink').addEventListener('click', () => insertLink($('statusText')));
     $('postPublished').addEventListener('change', markDirty);
     $('imgPick').addEventListener('click', () => $('imgFile').click());
     $('imgFile').addEventListener('change', async (e) => {
@@ -933,20 +1081,21 @@
     });
     $('postDelete').addEventListener('click', async () => {
         if (editingIndex < 0) return;
-        const p = posts[editingIndex];
-        if (!confirm('Delete “' + ((p.title || '').trim() || 'Untitled') + '”? The live page comes down on the next deploy.')) return;
+        const p = updates[editingIndex];
+        const label = p.type === 'status' ? stripHtml(p.text) : ((p.title || '').trim() || 'Untitled note');
+        if (!confirm('Delete “' + (label || 'Empty status') + '”? It comes down on the next deploy.')) return;
         publishBtn.disabled = true;
         setStatus('Deleting…');
         try {
-            const next = posts.slice();
+            const next = updates.slice();
             next.splice(editingIndex, 1);
-            await savePosts(next, 'Delete post: ' + (p.slug || ''));
-            posts = next;
+            await saveUpdates(next, 'Delete update: ' + (p.id || p.slug || ''));
+            updates = next;
             dirty = false;
-            mode = 'home';
+            mode = 'updates';
             postView.classList.add('hidden');
-            homeView.classList.remove('hidden');
-            if (loadedContent) render(loadedContent);
+            updatesView.classList.remove('hidden');
+            renderUpdatesList();
             renderNav();
             setStatus('Deleted, deploying…');
             pollDeploy();
@@ -1010,10 +1159,11 @@
         mode = 'home';
         editingIndex = -1;
         homeView.classList.remove('hidden');
+        updatesView.classList.add('hidden');
         postView.classList.add('hidden');
         try {
             await load();
-            await loadPosts();
+            await loadUpdates();
             renderNav();
         } catch (err) {
             setStatus('Could not load content — ' + err.message, 'err');
