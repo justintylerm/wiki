@@ -67,7 +67,7 @@
         .posts-list a{color:var(--text-body);text-decoration:none;letter-spacing:-.012em;transition:color .2s ease}
         .posts-list a:hover{color:#000;text-decoration:underline;text-decoration-thickness:1px;text-underline-offset:3px}
         .posts-list--archive{margin-left:var(--tree-indent)}
-        .feed-window{position:fixed;z-index:900;right:30px;top:30px;width:clamp(560px,46vw,920px);max-width:calc(100vw - 60px);height:calc(100vh - 60px);background:var(--bg);border:1px solid var(--border);box-shadow:none;display:flex;flex-direction:column;overflow:hidden;opacity:1;transform:translateX(calc(100% + 60px));transition:transform .4s cubic-bezier(.22,1,.36,1)}
+        .feed-window{position:fixed;z-index:900;right:30px;top:30px;width:clamp(560px,46vw,920px);max-width:calc(100vw - 60px);height:calc(100vh - 60px);background:var(--bg);border:1px solid var(--border);border-radius:10px;box-shadow:none;display:flex;flex-direction:column;overflow:hidden;opacity:1;transform:translateX(calc(100% + 60px));transition:transform .4s cubic-bezier(.22,1,.36,1)}
         .feed-window[hidden]{display:none}
         .feed-window.open{opacity:1;transform:none}
         .feed-bar{height:58px;display:flex;align-items:center;justify-content:space-between;gap:20px;padding:0 20px;border-bottom:1px solid rgba(0,0,0,.08);background:var(--bg);user-select:none;flex-shrink:0}
@@ -86,8 +86,8 @@
         .feed-status a:hover{color:rgba(0,0,0,.5)}
         .feed-post-title{font-size:34px;font-weight:400;line-height:1.15em;letter-spacing:-.032em;margin-bottom:14px}
         .feed-post-summary{max-width:54ch;color:var(--text-body);font-size:15px;line-height:1.48em;letter-spacing:-.014em;margin-bottom:24px}
-        .feed-post-media{overflow:hidden;background:#e8e8e4}
-        .feed-post-media img{display:block;width:100%;aspect-ratio:16/9;object-fit:cover}
+        .feed-post-media{overflow:hidden;background:#e8e8e4;border-radius:10px}
+        .feed-post-media img{display:block;width:100%;aspect-ratio:16/9;object-fit:cover;border-radius:inherit}
         .feed-post-body{display:grid;grid-template-rows:0fr;opacity:0;transition:grid-template-rows .46s cubic-bezier(.22,1,.36,1),opacity .28s ease}
         .feed-post-body-inner{min-height:0;overflow:hidden}
         .feed-item--post.is-expanded .feed-post-body{grid-template-rows:1fr;opacity:1}
@@ -98,11 +98,11 @@
         .feed-article-list{padding-left:18px}
         .feed-article-list li+li{margin-top:8px}
         .feed-article-quote{padding-left:18px;border-left:1px solid rgba(0,0,0,.18);color:var(--text-body);font-size:18px;line-height:1.45em}
-        .feed-article-image img{display:block;width:100%;height:auto;background:#e8e8e4}
+        .feed-article-image img{display:block;width:100%;height:auto;background:#e8e8e4;border-radius:10px}
         .feed-article-caption{margin-top:9px;color:var(--text-muted);font-size:11px;line-height:1.45em;letter-spacing:0}
         .feed-article-gallery{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
         .feed-article-gallery figure:only-child{grid-column:1/-1}
-        .feed-article-gallery img{display:block;width:100%;height:100%;min-height:180px;aspect-ratio:4/3;object-fit:cover;background:#e8e8e4}
+        .feed-article-gallery img{display:block;width:100%;height:100%;min-height:180px;aspect-ratio:4/3;object-fit:cover;background:#e8e8e4;border-radius:10px}
         .feed-post-toggle{display:inline-flex;align-items:center;gap:5px;margin-top:18px;padding:0;border:0;background:none;color:var(--text-muted);font-family:inherit;font-size:12px;line-height:1.4em;letter-spacing:-.01em;cursor:pointer;transition:color .2s ease}
         .feed-post-toggle:hover{color:#000}
         .feed-chevron{width:13px;height:13px;fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round;transition:transform .3s cubic-bezier(.22,1,.36,1)}
@@ -120,12 +120,13 @@
         @keyframes like-count-roll{0%{transform:translateY(35%);opacity:.35}100%{transform:translateY(0);opacity:1}}
         .page-wrapper{display:flex;min-height:100vh}
         .photo-column{position:fixed;right:30px;bottom:30px;display:flex;flex-direction:column;align-items:flex-end;justify-content:flex-end;animation:photoFade .8s cubic-bezier(.22,1,.36,1) .05s both}
-        .photo-main{width:330px;height:440px;object-fit:cover;object-position:center 20%}
-        .photo-caption{color:var(--text-body);font-size:12px;font-weight:400;line-height:1.6em;text-align:right;margin-bottom:13px}
-        .footer{position:fixed;top:30px;right:30px;color:var(--text-body);font-size:12px;line-height:1.6em;z-index:10}
+        .photo-main{width:330px;height:440px;object-fit:cover;object-position:center 20%;border-radius:10px;transition:opacity .3s ease}
+        .photo-caption{color:var(--text-body);font-size:12px;font-weight:400;line-height:1.6em;text-align:right;margin-bottom:13px;transition:opacity .3s ease}
+        .footer{position:fixed;top:30px;right:30px;color:var(--text-body);font-size:12px;line-height:1.6em;z-index:10;transition:opacity .3s ease}
         .footer-mobile{display:none}
         .now-playing{position:fixed;bottom:30px;left:30px;color:var(--text-body);font-size:12px;line-height:1.6em;transition:opacity .3s ease;z-index:10}
         .now-playing.hidden,.footer.hidden{opacity:0!important;visibility:hidden;pointer-events:none}
+        body.feed-open .photo-main,body.feed-open .photo-caption,body.feed-open .footer-desktop{opacity:0;pointer-events:none}
         .fade-up{opacity:0;transform:translateY(14px);animation:fadeUp .55s cubic-bezier(.22,1,.36,1) forwards}
         @keyframes fadeUp{to{opacity:1;transform:translateY(0)}}
         @keyframes photoFade{from{opacity:0}to{opacity:1}}
@@ -145,7 +146,7 @@
             .footer-mobile{display:block!important}
             .footer-desktop{display:none!important}
             .now-playing{display:none!important}
-            .feed-window{width:100vw;max-width:none;height:100dvh;right:0;top:0;border:0;box-shadow:none;opacity:0;transform:none;transition:opacity .22s ease}
+            .feed-window{width:100vw;max-width:none;height:100dvh;right:0;top:0;border:0;border-radius:0;box-shadow:none;opacity:0;transform:none;transition:opacity .22s ease}
             .feed-window.open{opacity:1;transform:none}
             .feed-items{padding:0 24px 48px}
             .feed-item::after{left:-24px;right:-24px}
@@ -211,7 +212,7 @@
                         <div class="posts-tree" aria-label="Latest posts"><!-- cms:posts -->
                         <div class="posts-title">Latest posts</div>
                         <ul class="posts-list">
-                            <li><a href="/?post=life-upgrades">Life upgrades (07-28)</a></li>
+
                         </ul>
                         <ul class="posts-list posts-list--archive">
                             <li><a href="/?feed=all">Archive</a></li>
@@ -291,29 +292,6 @@
                         <span class="feed-like-count" aria-live="polite">0</span>
                     </button>
                 </article>
-                <article class="feed-item feed-item--post" id="post-life-upgrades" data-post-slug="life-upgrades" data-feed-id="note-life-upgrades">
-                    <div class="feed-meta"><time>07-28-26</time></div>
-                    <h2 class="feed-post-title">Life upgrades</h2>
-                    <p class="feed-post-summary">A comprehensive list of stuff that has changed my life for the better than I think more people should know about.</p>
-                    <figure class="feed-post-media">
-                        <img src="/assets/posts/life-upgrades.webp" alt="Life upgrades" loading="lazy" decoding="async">
-                    </figure>
-                    <button class="feed-post-toggle" type="button" aria-expanded="false" aria-controls="feed-post-body-life-upgrades">
-                        <span class="feed-post-toggle-label">Read full note</span>
-                        <svg class="feed-chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"></path></svg>
-                    </button>
-                    <div class="feed-post-body" id="feed-post-body-life-upgrades" aria-hidden="true" inert>
-                        <div class="feed-post-body-inner">
-                            <div class="feed-article">
-                            <ul class="feed-article-list"><li><a href="https://www.amazon.com/Tushy-Classic-Bidet-Toilet-Attachment/dp/B08VS11Z1N/ref=sr_1_2_sspa?crid=ENS1FBTO72LE&dib=eyJ2IjoiMSJ9.9S7eRabeTzFGfVfedPUVaY36OGuI_HvKN20jkLn1DoGZ-vq6rSN4PS_bbpP8cXaH6pGYi3fCZjHwt8RDHeajwRA1FePbU9i3NKoPXSAAwvgSBTO9lB5BMmm-jJn5AW_Pyrk1uXOamMy8gUo7s8MVq3uFdddi3S5ysq9KP9veYLdQoocM9IJ3AKkwpqHS2k9OkrwaCdVh6rGvyHIMTPUx-RIU3DxIdYtQ1rXV9gmlbwQN19E7DpFmNWhecnXE7WLMuf95-x5nRzbYXNw6Vh1YXjvOj7cZo7O3nGojikDu8mo.aYFq7sOLlFXo5nahOsfAK2FA_-5hU907j8cDh089wuo&dib_tag=se&keywords=hello%2Btushy&qid=1785256578&sprefix=hello%2Btushyt%2Caps%2C130&sr=8-2-spons&sp_csd=d2lkZ2V0TmFtZT1zcF9hdGY&th=1">Bidet toilet seat attachment</a></li><li>Professional hair clippers</li><li>Mechanical keyboard</li><li>Wireless vacuum</li></ul>
-                            </div>
-                        </div>
-                    </div>
-                    <button class="feed-like" type="button" data-like-id="note-life-upgrades" aria-pressed="false" aria-label="Like this note">
-                        <svg class="feed-like-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78L12 21.23l8.84-8.84a5.5 5.5 0 0 0 0-7.78Z"></path></svg>
-                        <span class="feed-like-count" aria-live="polite">0</span>
-                    </button>
-                </article>
                 <article class="feed-item feed-item--status" data-feed-id="update-182802h">
                     <div class="feed-meta"><time>07-28-26</time></div>
                     <p class="feed-status">Picked up the <a href="https://www.amazon.com/XTEINK-X4-Ultra-Thin-Magnetic-Ready-Distraction-Free/dp/B0GPXPK65X" target="_blank" rel="noopener noreferrer">XTEINK X4</a>. E-Ink is magic. Finished <a href="https://www.goodreads.com/book/show/70401.On_the_Road" target="_blank" rel="noopener noreferrer">On the Road</a> recently and it rules.</p>
@@ -335,7 +313,7 @@
     </section>
 
     <script src="/src/sounds.js" defer></script>
-    <script src="src/main.js?v=20260805-9" defer></script>
+    <script src="src/main.js?v=20260805-10" defer></script>
     <script>
         // Defer analytics until after load + idle to keep the main thread clear for LCP/TBT.
         (function(){

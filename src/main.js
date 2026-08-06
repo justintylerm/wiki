@@ -104,6 +104,7 @@ const nowPlaying = document.getElementById('now-playing');
             feedReturnFocus = trigger || document.activeElement;
             trigger.setAttribute('aria-expanded', 'true');
             trigger.parentElement.classList.add('panel-open');
+            document.body.classList.add('feed-open');
 
             feedWindow.hidden = false;
             if (feedScroll) feedScroll.scrollTop = 0;
@@ -118,6 +119,7 @@ const nowPlaying = document.getElementById('now-playing');
             closeExpandedPosts(true);
             if (window.uiSound) window.uiSound.play('slide');
             feedWindow.classList.remove('open');
+            document.body.classList.remove('feed-open');
             document.removeEventListener('keydown', onFeedKeydown);
             clearTimeout(feedHideTimer);
             feedHideTimer = setTimeout(() => {
