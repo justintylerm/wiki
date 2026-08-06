@@ -25,7 +25,7 @@
 
     <style>
         *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-        :root{--bg:#fff;--text:#000;--text-muted:rgba(0,0,0,.4);--accent:#000;--text-body:rgba(0,0,0,.65);--border:rgba(0,0,0,.08)}
+        :root{--bg:#fff;--text:#000;--text-muted:rgba(0,0,0,.4);--accent:#000;--text-body:rgba(0,0,0,.65);--border:rgba(0,0,0,.08);--popup-shadow:0 0 2px rgba(0,0,0,.014),0 0 6px rgba(0,0,0,.014),0 0 12px rgba(0,0,0,.014),0 0 22px rgba(0,0,0,.013),0 0 38px rgba(0,0,0,.012),0 0 62px rgba(0,0,0,.01),0 0 96px rgba(0,0,0,.008),0 0 144px rgba(0,0,0,.006)}
         html{-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;overflow-y:scroll;scrollbar-gutter:stable;-ms-overflow-style:none;scrollbar-width:none}
         html::-webkit-scrollbar{display:none}
         body{background-color:var(--bg);color:var(--text);font-family:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;font-weight:400;letter-spacing:-.015em;min-height:100vh}
@@ -42,8 +42,10 @@
         .accordion+.accordion{border-top:1px solid var(--border)}
         .accordion-trigger{display:flex;align-items:center;justify-content:space-between;width:100%;padding:18px 0;background:none;border:none;color:var(--text-body);font-family:inherit;font-size:17px;font-weight:400;letter-spacing:-.016em;line-height:1.38em;cursor:pointer;transition:opacity .2s ease;text-align:left}
         .accordion-trigger:hover{opacity:.7}
-        .accordion-icon{color:var(--text-body);font-size:18px;font-weight:300;transition:transform .3s cubic-bezier(.22,1,.36,1);width:24px;text-align:center;flex-shrink:0;user-select:none;line-height:1}
-        .accordion.open .accordion-icon{transform:rotate(45deg)}
+        .accordion-icon{position:relative;width:24px;height:24px;color:var(--text-body);font-size:0;transition:transform .3s cubic-bezier(.22,1,.36,1);text-align:center;flex-shrink:0;user-select:none;transform-origin:50% 50%}
+        .accordion-icon::before,.accordion-icon::after{content:"";position:absolute;left:50%;top:50%;width:10px;height:1px;background:currentColor;transform:translate(-50%,-50%)}
+        .accordion-icon::after{transform:translate(-50%,-50%) rotate(90deg)}
+        .accordion.open .accordion-icon,.accordion.panel-open .accordion-icon{transform:rotate(45deg)}
         .accordion-content{overflow:hidden;max-height:0;transition:max-height .4s cubic-bezier(.22,1,.36,1),opacity .3s ease;opacity:0}
         .accordion.open .accordion-content{opacity:1}
         .accordion-inner{padding-bottom:20px;color:var(--text-body);font-size:14px;line-height:1.42em;font-weight:400;letter-spacing:-.012em}
@@ -65,19 +67,57 @@
         .posts-list a{color:var(--text-body);text-decoration:none;letter-spacing:-.012em;transition:color .2s ease}
         .posts-list a:hover{color:#000;text-decoration:underline;text-decoration-thickness:1px;text-underline-offset:3px}
         .posts-list--archive{margin-left:var(--tree-indent)}
-        .kitdrop-window{position:fixed;z-index:1000;left:0;top:0;width:min(1120px,92vw);height:min(720px,86vh);background:var(--bg);border:1px solid var(--border);box-shadow:0 20px 60px rgba(0,0,0,.09);display:flex;flex-direction:column;overflow:hidden;opacity:0;transform:translateY(8px) scale(.985);transition:opacity .28s cubic-bezier(.22,1,.36,1),transform .28s cubic-bezier(.22,1,.36,1)}
-        .kitdrop-window[hidden]{display:none}
-        .kitdrop-window.open{opacity:1;transform:none}
-        .kitdrop-bar{display:flex;align-items:center;gap:16px;padding:14px 18px;background:#FF6900;cursor:move;user-select:none;flex-shrink:0}
-        .kitdrop-msg{flex:1;text-align:center;font-size:13px;line-height:1.4em;color:#fff;letter-spacing:-.012em}
-        .kitdrop-close{background:none;border:none;padding:0;width:24px;height:24px;font-family:inherit;font-size:18px;font-weight:300;line-height:1;text-align:center;color:#fff;cursor:pointer;flex-shrink:0;transform:rotate(45deg);transition:opacity .2s ease}
-        .kitdrop-close:hover{opacity:.6}
-        .kitdrop-body{position:relative;flex:1;display:flex;min-height:0}
-        .kitdrop-frame{flex:1;width:100%;border:0;background:#fff}
-        .kitdrop-loader{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:#fff}
-        .kitdrop-window.kit-loaded .kitdrop-loader{display:none}
-        .kitdrop-spinner{width:26px;height:26px;border:2.5px solid rgba(0,0,0,.1);border-top-color:#FF6900;border-radius:50%;animation:kitspin .7s linear infinite}
-        @keyframes kitspin{to{transform:rotate(360deg)}}
+        .feed-window{position:fixed;z-index:900;left:0;top:0;width:clamp(560px,46vw,920px);max-width:calc(100vw - 60px);height:calc(100vh - 60px);background:var(--bg);border:0;box-shadow:var(--popup-shadow);display:flex;flex-direction:column;overflow:hidden;opacity:1;transform:translateX(calc(100% + 60px));transition:transform .4s cubic-bezier(.22,1,.36,1)}
+        .feed-window[hidden]{display:none}
+        .feed-window.open{opacity:1;transform:none}
+        .feed-bar{height:58px;display:flex;align-items:center;justify-content:space-between;gap:20px;padding:0 20px;border-bottom:1px solid rgba(0,0,0,.08);background:var(--bg);user-select:none;flex-shrink:0}
+        .feed-heading{font-size:13px;letter-spacing:-.012em;color:var(--text-body)}
+        .feed-close{width:24px;height:24px;padding:0;border:0;background:none;color:var(--text-body);font-family:inherit;font-size:20px;font-weight:300;line-height:1;cursor:pointer;transition:opacity .2s ease}
+        .feed-close:hover{opacity:.5}
+        .feed-scroll{min-height:0;overflow-y:auto;overscroll-behavior:contain;-ms-overflow-style:none;scrollbar-width:none}
+        .feed-scroll::-webkit-scrollbar{display:none}
+        .feed-items{padding:0 48px 70px}
+        .feed-item{position:relative;padding:42px 0}
+        .feed-item::after{content:"";position:absolute;left:-48px;right:-48px;bottom:0;height:1px;background:rgba(0,0,0,.08)}
+        .feed-item:last-child::after{display:none}
+        .feed-meta{display:flex;align-items:center;gap:10px;margin-bottom:20px;color:var(--text-muted);font-size:11px;line-height:1.3em;letter-spacing:0}
+        .feed-status{max-width:52ch;color:var(--text-body);font-size:17px;line-height:1.45em;letter-spacing:-.016em;text-wrap:pretty}
+        .feed-status a{color:#000;text-decoration:underline;text-decoration-thickness:1px;text-underline-offset:3px}
+        .feed-status a:hover{color:rgba(0,0,0,.5)}
+        .feed-post-title{font-size:34px;font-weight:400;line-height:1.15em;letter-spacing:-.032em;margin-bottom:14px}
+        .feed-post-summary{max-width:54ch;color:var(--text-body);font-size:15px;line-height:1.48em;letter-spacing:-.014em;margin-bottom:24px}
+        .feed-post-media{overflow:hidden;background:#e8e8e4}
+        .feed-post-media img{display:block;width:100%;aspect-ratio:16/9;object-fit:cover}
+        .feed-post-body{display:grid;grid-template-rows:0fr;opacity:0;transition:grid-template-rows .46s cubic-bezier(.22,1,.36,1),opacity .28s ease}
+        .feed-post-body-inner{min-height:0;overflow:hidden}
+        .feed-item--post.is-expanded .feed-post-body{grid-template-rows:1fr;opacity:1}
+        .feed-article{padding-top:30px;color:var(--text-body);font-size:15px;line-height:1.55em;letter-spacing:-.014em}
+        .feed-article > *+*{margin-top:20px}
+        .feed-article a{color:#000;text-decoration:underline;text-decoration-thickness:1px;text-underline-offset:3px}
+        .feed-article-heading{color:#000;font-size:22px;font-weight:400;line-height:1.25em;letter-spacing:-.025em;padding-top:8px}
+        .feed-article-list{padding-left:18px}
+        .feed-article-list li+li{margin-top:8px}
+        .feed-article-quote{padding-left:18px;border-left:1px solid rgba(0,0,0,.18);color:var(--text-body);font-size:18px;line-height:1.45em}
+        .feed-article-image img{display:block;width:100%;height:auto;background:#e8e8e4}
+        .feed-article-caption{margin-top:9px;color:var(--text-muted);font-size:11px;line-height:1.45em;letter-spacing:0}
+        .feed-article-gallery{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+        .feed-article-gallery figure:only-child{grid-column:1/-1}
+        .feed-article-gallery img{display:block;width:100%;height:100%;min-height:180px;aspect-ratio:4/3;object-fit:cover;background:#e8e8e4}
+        .feed-post-toggle{display:inline-flex;align-items:center;gap:5px;margin-top:18px;padding:0;border:0;background:none;color:var(--text-muted);font-family:inherit;font-size:12px;line-height:1.4em;letter-spacing:-.01em;cursor:pointer;transition:color .2s ease}
+        .feed-post-toggle:hover{color:#000}
+        .feed-chevron{width:13px;height:13px;fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round;transition:transform .3s cubic-bezier(.22,1,.36,1)}
+        .feed-post-toggle[aria-expanded="true"] .feed-chevron{transform:rotate(180deg)}
+        .feed-like{display:flex;align-items:center;gap:5px;width:max-content;height:24px;margin-top:22px;padding:0;border:0;border-radius:0;background:none;color:rgba(0,0,0,.38);box-shadow:none;font-family:inherit;font-size:14px;font-weight:400;line-height:1;letter-spacing:0;cursor:pointer;transition:color .18s ease,transform .18s ease}
+        .feed-like:hover{background:none;color:rgba(0,0,0,.68)}
+        .feed-like:active{transform:scale(.96)}
+        .feed-like[aria-pressed="true"]{background:none;color:#000}
+        .feed-like-icon{width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
+        .feed-like[aria-pressed="true"] .feed-like-icon{fill:currentColor}
+        .feed-like-count{min-width:1ch;text-align:left;font-variant-numeric:tabular-nums}
+        .feed-like.is-reacting .feed-like-icon{animation:like-heart-pop .28s cubic-bezier(.22,1,.36,1)}
+        .feed-like.is-reacting .feed-like-count{animation:like-count-roll .28s cubic-bezier(.22,1,.36,1)}
+        @keyframes like-heart-pop{0%{transform:scale(.72)}55%{transform:scale(1.16)}100%{transform:scale(1)}}
+        @keyframes like-count-roll{0%{transform:translateY(35%);opacity:.35}100%{transform:translateY(0);opacity:1}}
         .page-wrapper{display:flex;min-height:100vh}
         .photo-column{position:fixed;right:30px;bottom:30px;display:flex;flex-direction:column;align-items:flex-end;justify-content:flex-end;animation:photoFade .8s cubic-bezier(.22,1,.36,1) .05s both}
         .photo-main{width:330px;height:440px;object-fit:cover;object-position:center 20%}
@@ -105,7 +145,13 @@
             .footer-mobile{display:block!important}
             .footer-desktop{display:none!important}
             .now-playing{display:none!important}
-            .kitdrop-window{display:none!important}
+            .feed-window{width:100vw;max-width:none;height:100dvh;left:0!important;top:0!important;box-shadow:none;opacity:0;transform:none;transition:opacity .22s ease}
+            .feed-window.open{opacity:1;transform:none}
+            .feed-items{padding:0 24px 48px}
+            .feed-item::after{left:-24px;right:-24px}
+            .feed-post-title{font-size:30px}
+            .feed-article-gallery{grid-template-columns:1fr}
+            .feed-article-gallery figure{grid-column:1}
         }
     </style>
 
@@ -165,10 +211,10 @@
                         <div class="posts-tree" aria-label="Latest posts"><!-- cms:posts -->
                         <div class="posts-title">Latest posts</div>
                         <ul class="posts-list">
-                            <li><a href="/blog/life-upgrades/">Life upgrades (07-28)</a></li>
+                            <li><a href="/?post=life-upgrades">Life upgrades (07-28)</a></li>
                         </ul>
                         <ul class="posts-list posts-list--archive">
-                            <li><a href="/archive/">Archive</a></li>
+                            <li><a href="/?feed=all">Archive</a></li>
                         </ul>
                     <!-- /cms:posts --></div>
                     </div>
@@ -215,7 +261,7 @@
             </div>
         </section>
 
-        <div class="footer footer-mobile"><!-- cms:updated -->Last updated 07-29-26<!-- /cms:updated --></div>
+        <div class="footer footer-mobile"><!-- cms:updated -->Last updated 08-05-26<!-- /cms:updated --></div>
     </main>
 
     <aside class="photo-column" aria-label="Photo">
@@ -224,23 +270,72 @@
     </aside>
     </div>
 
-    <div class="footer footer-desktop"><!-- cms:updated -->Last updated 07-29-26<!-- /cms:updated --></div>
+    <div class="footer footer-desktop"><!-- cms:updated -->Last updated 08-05-26<!-- /cms:updated --></div>
 
     <div class="now-playing" id="now-playing" aria-live="polite">Now playing &ldquo;Psychic Geography&rdquo; by dovs</div>
 
-    <div class="kitdrop-window" id="kitdrop-window" role="dialog" aria-label="Kitdrop preview" aria-modal="false" hidden>
-        <div class="kitdrop-bar" id="kitdrop-bar">
-            <span class="kitdrop-msg">This is an unpolished preview of Kitdrop, a workspace-sharing web app I'm working on.</span>
-            <button class="kitdrop-close" id="kitdrop-close" type="button" aria-label="Close Kitdrop preview">+</button>
+    <section class="feed-window" id="feed-window" role="dialog" aria-label="What's on my mind feed" aria-modal="false" hidden>
+        <header class="feed-bar" id="feed-bar">
+            <div class="feed-heading">
+                <span>Feed</span>
+            </div>
+            <button class="feed-close" id="feed-close" type="button" aria-label="Close feed">&times;</button>
+        </header>
+        <div class="feed-scroll" id="feed-scroll">
+            <div class="feed-items"><!-- cms:feed -->
+                <article class="feed-item feed-item--status" data-feed-id="update-buek70">
+                    <div class="feed-meta"><time>07-28-26</time></div>
+                    <p class="feed-status">Current plant observations: <a href="https://www.inaturalist.org/observations?user_id=justintylerm&verifiable=any" target="_blank" rel="noopener noreferrer"><span class="inat-count">33</span></a></p>
+                    <button class="feed-like" type="button" data-like-id="update-buek70" aria-pressed="false" aria-label="Like this update">
+                        <svg class="feed-like-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78L12 21.23l8.84-8.84a5.5 5.5 0 0 0 0-7.78Z"></path></svg>
+                        <span class="feed-like-count" aria-live="polite">0</span>
+                    </button>
+                </article>
+                <article class="feed-item feed-item--post" id="post-life-upgrades" data-post-slug="life-upgrades" data-feed-id="note-life-upgrades">
+                    <div class="feed-meta"><time>07-28-26</time></div>
+                    <h2 class="feed-post-title">Life upgrades</h2>
+                    <p class="feed-post-summary">A comprehensive list of stuff that has changed my life for the better than I think more people should know about.</p>
+                    <figure class="feed-post-media">
+                        <img src="/assets/posts/life-upgrades.webp" alt="Life upgrades" loading="lazy" decoding="async">
+                    </figure>
+                    <button class="feed-post-toggle" type="button" aria-expanded="false" aria-controls="feed-post-body-life-upgrades">
+                        <span class="feed-post-toggle-label">Read full note</span>
+                        <svg class="feed-chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"></path></svg>
+                    </button>
+                    <div class="feed-post-body" id="feed-post-body-life-upgrades" aria-hidden="true" inert>
+                        <div class="feed-post-body-inner">
+                            <div class="feed-article">
+                            <ul class="feed-article-list"><li><a href="https://www.amazon.com/Tushy-Classic-Bidet-Toilet-Attachment/dp/B08VS11Z1N/ref=sr_1_2_sspa?crid=ENS1FBTO72LE&dib=eyJ2IjoiMSJ9.9S7eRabeTzFGfVfedPUVaY36OGuI_HvKN20jkLn1DoGZ-vq6rSN4PS_bbpP8cXaH6pGYi3fCZjHwt8RDHeajwRA1FePbU9i3NKoPXSAAwvgSBTO9lB5BMmm-jJn5AW_Pyrk1uXOamMy8gUo7s8MVq3uFdddi3S5ysq9KP9veYLdQoocM9IJ3AKkwpqHS2k9OkrwaCdVh6rGvyHIMTPUx-RIU3DxIdYtQ1rXV9gmlbwQN19E7DpFmNWhecnXE7WLMuf95-x5nRzbYXNw6Vh1YXjvOj7cZo7O3nGojikDu8mo.aYFq7sOLlFXo5nahOsfAK2FA_-5hU907j8cDh089wuo&dib_tag=se&keywords=hello%2Btushy&qid=1785256578&sprefix=hello%2Btushyt%2Caps%2C130&sr=8-2-spons&sp_csd=d2lkZ2V0TmFtZT1zcF9hdGY&th=1">Bidet toilet seat attachment</a></li><li>Professional hair clippers</li><li>Mechanical keyboard</li><li>Wireless vacuum</li></ul>
+                            </div>
+                        </div>
+                    </div>
+                    <button class="feed-like" type="button" data-like-id="note-life-upgrades" aria-pressed="false" aria-label="Like this note">
+                        <svg class="feed-like-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78L12 21.23l8.84-8.84a5.5 5.5 0 0 0 0-7.78Z"></path></svg>
+                        <span class="feed-like-count" aria-live="polite">0</span>
+                    </button>
+                </article>
+                <article class="feed-item feed-item--status" data-feed-id="update-182802h">
+                    <div class="feed-meta"><time>07-28-26</time></div>
+                    <p class="feed-status">Picked up the <a href="https://www.amazon.com/XTEINK-X4-Ultra-Thin-Magnetic-Ready-Distraction-Free/dp/B0GPXPK65X" target="_blank" rel="noopener noreferrer">XTEINK X4</a>. E-Ink is magic. Finished <a href="https://www.goodreads.com/book/show/70401.On_the_Road" target="_blank" rel="noopener noreferrer">On the Road</a> recently and it rules.</p>
+                    <button class="feed-like" type="button" data-like-id="update-182802h" aria-pressed="false" aria-label="Like this update">
+                        <svg class="feed-like-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78L12 21.23l8.84-8.84a5.5 5.5 0 0 0 0-7.78Z"></path></svg>
+                        <span class="feed-like-count" aria-live="polite">0</span>
+                    </button>
+                </article>
+                <article class="feed-item feed-item--status" data-feed-id="update-1a8gi4f">
+                    <div class="feed-meta"><time>07-28-26</time></div>
+                    <p class="feed-status">We are living through the best time in history to be making things online.</p>
+                    <button class="feed-like" type="button" data-like-id="update-1a8gi4f" aria-pressed="false" aria-label="Like this update">
+                        <svg class="feed-like-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78L12 21.23l8.84-8.84a5.5 5.5 0 0 0 0-7.78Z"></path></svg>
+                        <span class="feed-like-count" aria-live="polite">0</span>
+                    </button>
+                </article>
+            <!-- /cms:feed --></div>
         </div>
-        <div class="kitdrop-body">
-            <div class="kitdrop-loader" aria-hidden="true"><span class="kitdrop-spinner"></span></div>
-            <iframe class="kitdrop-frame" id="kitdrop-frame" title="Kitdrop preview" loading="lazy" data-src="https://kitdrop.co/justin" referrerpolicy="no-referrer-when-downgrade"></iframe>
-        </div>
-    </div>
+    </section>
 
     <script src="/src/sounds.js" defer></script>
-    <script src="src/main.js" defer></script>
+    <script src="src/main.js?v=20260805-5" defer></script>
     <script>
         // Defer analytics until after load + idle to keep the main thread clear for LCP/TBT.
         (function(){

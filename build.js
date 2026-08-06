@@ -3,8 +3,8 @@
  * Build step for justinmartin.wiki. Zero dependencies. Run: node build.js
  *
  *  1. Injects content.json into index.html between <!-- cms:x --> ... <!-- /cms:x --> markers.
- *  2. Generates a static page per published post in posts.json at blog/<slug>/index.html,
- *     reusing the homepage's own <style> block so the two never drift apart.
+ *  2. Renders published posts inline in the feed and leaves lightweight redirects at
+ *     legacy blog/<slug>/ URLs so old bookmarks open the matching feed article.
  */
 const fs = require('fs');
 const path = require('path');
@@ -66,6 +66,74 @@ inject('updated', `Last updated ${stamp}`);
 const escapeHtml = (s) => String(s == null ? '' : s)
     .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 
+// Feed likes use stable, URL-safe IDs. Notes keep their slug; updates are keyed
+// from their content so moving one within the feed doesn't reset its counter.
+const stableLikeHash = (value) => {
+    let hash = 2166136261;
+    for (const char of String(value || '')) {
+        hash ^= char.charCodeAt(0);
+        hash = Math.imul(hash, 16777619);
+    }
+    return (hash >>> 0).toString(36);
+};
+
+const renderLikeButton = (likeId, itemLabel) => `
+                    <button class="feed-like" type="button" data-like-id="${escapeHtml(likeId)}" aria-pressed="false" aria-label="Like this ${itemLabel}">
+                        <svg class="feed-like-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78L12 21.23l8.84-8.84a5.5 5.5 0 0 0 0-7.78Z"></path></svg>
+                        <span class="feed-like-count" aria-live="polite">0</span>
+                    </button>`;
+
+// Feed article blocks. Existing paragraph/list posts remain valid while newer
+// posts can mix headings, quotes, individual images, and multi-image galleries.
+const normalizeBlock = (b) => {
+    if (typeof b === 'string') return { type: 'p', text: b };
+    if (!b || typeof b !== 'object') return { type: 'p', text: '' };
+    if (b.type === 'ul') return { type: 'ul', items: Array.isArray(b.items) ? b.items : [] };
+    if (b.type === 'heading') return { type: 'heading', text: b.text || '' };
+    if (b.type === 'quote') return { type: 'quote', text: b.text || '' };
+    if (b.type === 'image') return { type: 'image', src: b.src || '', alt: b.alt || '', caption: b.caption || '' };
+    if (b.type === 'gallery') return { type: 'gallery', images: Array.isArray(b.images) ? b.images : [] };
+    return { type: 'p', text: b.text || '' };
+};
+
+const assetHref = (src) => {
+    const value = String(src || '').trim();
+    if (!value) return '';
+    return /^(?:https?:|data:|\/)/i.test(value) ? value : `/${value}`;
+};
+
+const renderFeedBlock = (rawBlock) => {
+    const block = normalizeBlock(rawBlock);
+    if (block.type === 'ul') {
+        const items = block.items.filter((item) => String(item).trim())
+            .map((item) => `<li>${item}</li>`).join('');
+        return items ? `<ul class="feed-article-list">${items}</ul>` : '';
+    }
+    if (block.type === 'heading') {
+        return block.text ? `<h3 class="feed-article-heading">${block.text}</h3>` : '';
+    }
+    if (block.type === 'quote') {
+        return block.text ? `<blockquote class="feed-article-quote">${block.text}</blockquote>` : '';
+    }
+    if (block.type === 'image') {
+        const src = assetHref(block.src);
+        if (!src) return '';
+        const caption = block.caption ? `<figcaption class="feed-article-caption">${block.caption}</figcaption>` : '';
+        return `<figure class="feed-article-image"><img src="${escapeHtml(src)}" alt="${escapeHtml(block.alt)}" loading="lazy" decoding="async">${caption}</figure>`;
+    }
+    if (block.type === 'gallery') {
+        const figures = block.images.map((entry) => typeof entry === 'string' ? { src: entry } : (entry || {}))
+            .map((entry) => {
+                const src = assetHref(entry.src);
+                if (!src) return '';
+                const caption = entry.caption ? `<figcaption class="feed-article-caption">${entry.caption}</figcaption>` : '';
+                return `<figure><img src="${escapeHtml(src)}" alt="${escapeHtml(entry.alt || '')}" loading="lazy" decoding="async">${caption}</figure>`;
+            }).filter(Boolean).join('');
+        return figures ? `<div class="feed-article-gallery">${figures}</div>` : '';
+    }
+    return block.text ? `<p class="feed-article-p">${block.text}</p>` : '';
+};
+
 // posts.json is the single source of truth for both the "Latest posts" tree below
 // and the blog page generator further down. Load it once, here, and reuse.
 let posts = [];
@@ -97,15 +165,16 @@ const postSortKey = (p) => {
     return `${yy || ''}-${mm || ''}-${dd || ''}`;
 };
 
-const latest = posts
+const publishedPosts = posts
     .filter((p) => p && p.published && p.slug)
-    .sort((a, b) => postSortKey(b).localeCompare(postSortKey(a)))
-    .slice(0, 3);
+    .sort((a, b) => postSortKey(b).localeCompare(postSortKey(a)));
+
+const latest = publishedPosts.slice(0, 3);
 
 const postRows = latest.map((p) => {
     const md = mmdd(p.date);
     const label = md ? `${escapeHtml(p.title)} (${escapeHtml(md)})` : escapeHtml(p.title);
-    return `                            <li><a href="/blog/${escapeHtml(p.slug)}/">${label}</a></li>`;
+    return `                            <li><a href="/?post=${encodeURIComponent(p.slug)}">${label}</a></li>`;
 }).join('\n');
 
 inject('posts', `
@@ -114,135 +183,89 @@ inject('posts', `
 ${postRows}
                         </ul>
                         <ul class="posts-list posts-list--archive">
-                            <li><a href="/archive/">Archive</a></li>
+                            <li><a href="/?feed=all">Archive</a></li>
                         </ul>
                     `);
+
+// ---------------------------------------------------------------------------
+// Feed window → cms:feed
+// The homepage thoughts become status entries and published posts become richer
+// note cards. This keeps the mockup connected to the two existing CMS sources.
+// ---------------------------------------------------------------------------
+const feedDate = escapeHtml(content.lastUpdated || stamp);
+const statusCards = (Array.isArray(content.thoughts) ? content.thoughts : []).map((thought) => {
+    // The compact mobile accordion owns the unique observation-count id; the
+    // feed uses a class so the live count can update in both places.
+    const status = String(thought).replace(/id=(['"])inat-count\1/g, 'class="inat-count"');
+    const likeId = `update-${stableLikeHash(thought)}`;
+    return `                <article class="feed-item feed-item--status" data-feed-id="${likeId}">
+                    <div class="feed-meta"><time>${feedDate}</time></div>
+                    <p class="feed-status">${status}</p>${renderLikeButton(likeId, 'update')}
+                </article>`;
+});
+
+const noteCards = publishedPosts.map((post) => {
+    const blocks = (Array.isArray(post.body) ? post.body : []).map(normalizeBlock);
+    const summaryIndex = blocks.findIndex((block) => block.type === 'p' && String(block.text).trim());
+    const summary = summaryIndex >= 0 ? blocks[summaryIndex].text : '';
+    const expandedBlocks = blocks.filter((block, index) => index !== summaryIndex)
+        .map(renderFeedBlock).filter(Boolean).join('\n                            ');
+    const image = post.image ? `
+                    <figure class="feed-post-media">
+                        <img src="${escapeHtml(assetHref(post.image))}" alt="${escapeHtml(post.imageAlt || post.title || '')}" loading="lazy" decoding="async">
+                    </figure>` : '';
+    const bodyId = `feed-post-body-${escapeHtml(post.slug)}`;
+    const expandable = expandedBlocks ? `
+                    <button class="feed-post-toggle" type="button" aria-expanded="false" aria-controls="${bodyId}">
+                        <span class="feed-post-toggle-label">Read full note</span>
+                        <svg class="feed-chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"></path></svg>
+                    </button>
+                    <div class="feed-post-body" id="${bodyId}" aria-hidden="true" inert>
+                        <div class="feed-post-body-inner">
+                            <div class="feed-article">
+                            ${expandedBlocks}
+                            </div>
+                        </div>
+                    </div>` : '';
+    const likeId = `note-${post.slug}`;
+    return `                <article class="feed-item feed-item--post" id="post-${escapeHtml(post.slug)}" data-post-slug="${escapeHtml(post.slug)}" data-feed-id="${escapeHtml(likeId)}">
+                    <div class="feed-meta"><time>${escapeHtml(post.date || '')}</time></div>
+                    <h2 class="feed-post-title">${escapeHtml(post.title || 'Untitled')}</h2>
+                    ${summary ? `<p class="feed-post-summary">${summary}</p>` : ''}${image}${expandable}${renderLikeButton(likeId, 'note')}
+                </article>`;
+});
+
+// Put the newest status first, then the latest note, then the remaining statuses.
+// This makes the initial mockup read like a mixed social stream instead of two lists.
+const feedCards = statusCards.length
+    ? [statusCards[0], ...noteCards, ...statusCards.slice(1)]
+    : noteCards;
+inject('feed', `\n${feedCards.join('\n')}\n            `);
 
 fs.writeFileSync(path.join(root, 'index.html'), html);
 console.log('Built index.html from content.json');
 
-// ---------------------------------------------------------------------------
-// Blog posts → blog/<slug>/index.html
-// ---------------------------------------------------------------------------
-
-// Plain-text (for <title>/meta): drop tags, collapse whitespace, then escape.
-const metaText = (s, max) => {
-    const text = String(s == null ? '' : s).replace(/<[^>]*>/g, '').replace(/&nbsp;/g, ' ').replace(/\s+/g, ' ').trim();
-    const clipped = max && text.length > max ? text.slice(0, max - 1).trimEnd() + '…' : text;
-    return escapeHtml(clipped);
-};
-
-// Body blocks: { type:'p', text } or { type:'ul', items:[] }. Legacy posts stored
-// plain strings for paragraphs — normalize those so old posts keep rendering.
-const normalizeBlock = (b) => {
-    if (typeof b === 'string') return { type: 'p', text: b };
-    if (b && b.type === 'ul') return { type: 'ul', items: Array.isArray(b.items) ? b.items : [] };
-    return { type: 'p', text: (b && b.text) || '' };
-};
-
-// Pull the homepage's inline <style> so post pages are pixel-identical, no duplication.
-const sharedStyle = (html.match(/<style>[\s\S]*?<\/style>/) || [''])[0];
-
-function renderPost(post) {
-    const url = `https://justinmartin.wiki/blog/${post.slug}/`;
-    const title = escapeHtml(post.title || 'Untitled');
-    const desc = metaText(post.body && post.body[0], 155);
-    const ogImage = post.image
-        ? `https://justinmartin.wiki/${post.image}`
-        : 'https://justinmartin.wiki/assets/photo.webp';
-
-    // Body blocks reuse the bio's .bio p styling and the homepage .thoughts-list bullets,
-    // with the fade-up stagger (delay-3..5) carried across blocks.
-    let delay = 3;
-    const bodyHtml = (post.body || []).map(normalizeBlock)
-        .filter((b) => b.type === 'ul' ? b.items.some((i) => String(i).trim()) : String(b.text).trim())
-        .map((b) => {
-            const d = Math.min(delay++, 5);
-            if (b.type === 'ul') {
-                const lis = b.items.filter((i) => String(i).trim())
-                    .map((i) => `                <li>${i}</li>`).join('\n');
-                return `            <ul class="thoughts-list fade-up delay-${d}">\n${lis}\n            </ul>`;
-            }
-            return `            <p class="fade-up delay-${d}">${b.text}</p>`;
-        }).join('\n');
-
-    const photo = post.image ? `
-    <aside class="photo-column" aria-label="Post image">
-        <img class="photo-main" src="/${post.image}" alt="${escapeHtml(post.imageAlt || post.title || '')}" width="330" height="440" decoding="async">
-    </aside>` : '';
-
-    const bodyClass = post.image ? '' : ' class="no-photo"';
-    const dateLine = post.date ? `Last updated ${escapeHtml(post.date)}` : '';
-
-    // Post-only tweaks appended after the shared homepage styles.
-    const extraStyle = `
-    <style>
-        .back-link{text-decoration:none}
-        .back-link:hover{opacity:.55}
-        .bio .thoughts-list{margin-bottom:20px}
-        .bio > :last-child{margin-bottom:0}
-        @media (min-width:1101px){.no-photo .page{margin-right:auto}}
-    </style>`;
-
-    return `<!DOCTYPE html>
+const blogDir = path.join(root, 'blog');
+// Keep legacy post URLs alive without maintaining a second reading experience.
+// Each route immediately opens the corresponding article inside the homepage feed.
+fs.rmSync(blogDir, { recursive: true, force: true });
+publishedPosts.forEach((post) => {
+    const dir = path.join(blogDir, post.slug);
+    fs.mkdirSync(dir, { recursive: true });
+    const destination = `/?post=${encodeURIComponent(post.slug)}`;
+    const title = escapeHtml(post.title || 'Post');
+    fs.writeFileSync(path.join(dir, 'index.html'), `<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>${title} &middot; Justin Martin</title>
-    <meta name="description" content="${desc}">
-    <meta name="theme-color" content="#ffffff">
-    <link rel="canonical" href="${url}">
-    <link rel="icon" type="image/png" href="/assets/png-354cc08a9867.png">
-
-    <meta property="og:type" content="article">
-    <meta property="og:title" content="${title}">
-    <meta property="og:description" content="${desc}">
-    <meta property="og:url" content="${url}">
-    <meta property="og:image" content="${ogImage}">
-    <meta name="twitter:card" content="summary_large_image">
-
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400&display=swap">
-    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400&display=swap" media="print" onload="this.media='all'">
-    <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400&display=swap"></noscript>
-
-    ${sharedStyle}${extraStyle}
+    <link rel="canonical" href="https://justinmartin.wiki${destination}">
+    <meta http-equiv="refresh" content="0;url=${destination}">
+    <script>location.replace(${JSON.stringify(destination)});<\/script>
 </head>
-<body${bodyClass}>
-    <div class="page-wrapper">
-    <main class="page">
-        <div class="bio">
-            <h1 class="bio-greeting fade-up delay-2">${title}</h1>
-${bodyHtml}
-        </div>
-
-        <div class="footer footer-mobile">${dateLine}</div>
-    </main>
-${photo}
-    </div>
-
-    <div class="footer footer-desktop">${dateLine}</div>
-
-    <a class="now-playing back-link" href="/">&larr; Back</a>
-
-    <script src="/src/sounds.js" defer></script>
-</body>
+<body><p><a href="${destination}">Open ${title} in the feed</a></p></body>
 </html>
-`;
-}
-
-const blogDir = path.join(root, 'blog');
-// Rebuild blog/ from scratch every run so deleted / renamed / unpublished posts
-// never leave an orphan folder behind.
-fs.rmSync(blogDir, { recursive: true, force: true });
-
-// posts already loaded and validated above (shared with the Latest posts tree).
-const live = posts.filter((p) => p && p.published && p.slug);
-live.forEach((post) => {
-    const dir = path.join(blogDir, post.slug);
-    fs.mkdirSync(dir, { recursive: true });
-    fs.writeFileSync(path.join(dir, 'index.html'), renderPost(post));
+`);
 });
-console.log(`Built ${live.length} post page(s) into blog/`);
+console.log(`Built ${publishedPosts.length} legacy post redirect(s) into blog/`);

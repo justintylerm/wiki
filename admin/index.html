@@ -60,7 +60,7 @@
         .toggle-row label{font-size:14px;color:var(--body);cursor:pointer}
         input[type=file]{display:none}
         /* body block editor */
-        .add-row{display:flex;gap:8px}
+        .add-row{display:flex;flex-wrap:wrap;gap:8px}
         .add-row .add{width:auto}
         .block{display:flex;gap:8px;align-items:flex-start;margin-bottom:10px}
         .block-main{flex:1}
@@ -72,6 +72,8 @@
         .list-item .block-main{flex:1}
         .sub-add{width:auto;align-self:flex-start;font-size:12px;padding:6px 11px}
         .ibtn.linkbtn{font-size:12px}
+        .body-media-pick{display:flex;align-items:center;gap:10px;margin-bottom:2px}
+        .body-media-name{font-size:12px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
         /* token screen */
         .gate{max-width:440px;margin:16vh auto 0;padding:0 24px}
         .gate h1{margin-bottom:12px}
@@ -151,7 +153,7 @@
 
     <div id="postView" class="hidden">
         <h1 id="postHeading">New post</h1>
-        <div class="sub">Lives at justinmartin.wiki/blog/<span id="slugEcho">&hellip;</span>/ &middot; goes live about a minute after publishing</div>
+        <div class="sub">Appears inline in the Feed &middot; legacy blog URL redirects here &middot; goes live about a minute after publishing<span id="slugEcho" class="hidden"></span></div>
 
         <section>
             <div class="label"><span>Title</span><span class="hint">the big heading</span></div>
@@ -164,7 +166,7 @@
         </section>
 
         <section>
-            <div class="label"><span>Image</span><span class="hint">optional &middot; the right-side photo</span></div>
+            <div class="label"><span>Preview image</span><span class="hint">optional &middot; shown before expansion</span></div>
             <div class="img-field">
                 <img class="img-preview empty" id="imgPreview" alt="">
                 <div class="img-actions">
@@ -181,6 +183,10 @@
             <div class="add-row">
                 <button class="add" data-add="para">+ Paragraph</button>
                 <button class="add" data-add="list">+ Bulleted list</button>
+                <button class="add" data-add="heading">+ Heading</button>
+                <button class="add" data-add="quote">+ Quote</button>
+                <button class="add" data-add="image">+ Image</button>
+                <button class="add" data-add="gallery">+ Gallery</button>
             </div>
         </section>
 
@@ -317,6 +323,10 @@
             if (kind === 'setup') addSetup('');
             if (kind === 'para') addParagraphBlock('');
             if (kind === 'list') addListBlock(['']);
+            if (kind === 'heading') addTextBlock('heading', '', 'Heading', 1);
+            if (kind === 'quote') addTextBlock('quote', '', 'Quote', 2);
+            if (kind === 'image') addImageBlock({});
+            if (kind === 'gallery') addGalleryBlock([{}]);
             markDirty();
         });
     });
@@ -544,6 +554,10 @@
         if (body.length) body.forEach((b) => {
             const nb = normalizeBlock(b);
             if (nb.type === 'ul') addListBlock(nb.items.length ? nb.items : ['']);
+            else if (nb.type === 'heading') addTextBlock('heading', nb.text, 'Heading', 1);
+            else if (nb.type === 'quote') addTextBlock('quote', nb.text, 'Quote', 2);
+            else if (nb.type === 'image') addImageBlock(nb);
+            else if (nb.type === 'gallery') addGalleryBlock(nb.images.length ? nb.images : [{}]);
             else addParagraphBlock(nb.text);
         });
         else addParagraphBlock('');
@@ -556,11 +570,14 @@
         setStatus(post ? ('Editing “' + ((post.title || '').trim() || 'Untitled') + '”') : 'New post');
     }
 
-    // Body is a list of blocks: { type:'p', text } or { type:'ul', items:[] }.
-    // Legacy posts stored plain strings — treat those as paragraphs.
+    // Body is a list of structured content blocks. Legacy strings remain paragraphs.
     const normalizeBlock = (b) => {
         if (typeof b === 'string') return { type: 'p', text: b };
         if (b && b.type === 'ul') return { type: 'ul', items: Array.isArray(b.items) ? b.items : [] };
+        if (b && b.type === 'heading') return { type: 'heading', text: b.text || '' };
+        if (b && b.type === 'quote') return { type: 'quote', text: b.text || '' };
+        if (b && b.type === 'image') return { type: 'image', src: b.src || '', alt: b.alt || '', caption: b.caption || '' };
+        if (b && b.type === 'gallery') return { type: 'gallery', images: Array.isArray(b.images) ? b.images : [] };
         return { type: 'p', text: (b && b.text) || '' };
     };
 
@@ -619,6 +636,24 @@
         return row;
     }
 
+    function addTextBlock(type, value, labelText, rows) {
+        const row = document.createElement('div');
+        row.className = 'block block-list';
+        const ta = makeTextarea(value || '', rows || 1);
+        const head = document.createElement('div');
+        head.className = 'block-head';
+        const label = document.createElement('div');
+        label.className = 'block-label';
+        label.textContent = labelText;
+        head.appendChild(label);
+        head.appendChild(blockTools(row, $('blocksList'), ta));
+        row.appendChild(head);
+        row.appendChild(ta);
+        row._getData = () => ({ type, text: ta.value.trim() });
+        $('blocksList').appendChild(row);
+        return row;
+    }
+
     function addListBlock(items) {
         const row = document.createElement('div');
         row.className = 'block block-list';
@@ -657,9 +692,140 @@
         return row;
     }
 
+    function makeBodyMediaFields(image) {
+        let pending = null;
+        const fields = document.createElement('div');
+        fields.className = 'list-items';
+
+        const picker = document.createElement('div');
+        picker.className = 'body-media-pick';
+        const pickButton = document.createElement('button');
+        pickButton.type = 'button';
+        pickButton.className = 'file-btn';
+        pickButton.textContent = 'Choose image…';
+        const fileInput = document.createElement('input');
+        fileInput.type = 'file';
+        fileInput.accept = 'image/*';
+        const fileName = document.createElement('span');
+        fileName.className = 'body-media-name';
+        fileName.textContent = image.src ? 'Using existing image' : 'or enter a path below';
+        pickButton.addEventListener('click', () => fileInput.click());
+        fileInput.addEventListener('change', async () => {
+            const file = fileInput.files && fileInput.files[0];
+            fileInput.value = '';
+            if (!file) return;
+            try {
+                const result = await downscaleImage(file, 1600, 0.84);
+                pending = { base64: result.base64, ext: result.ext };
+                src.value = '';
+                fileName.textContent = file.name;
+                markDirty();
+            } catch (err) {
+                setStatus('Image error: ' + err.message, 'err');
+            }
+        });
+        picker.appendChild(pickButton);
+        picker.appendChild(fileInput);
+        picker.appendChild(fileName);
+
+        const src = makeInput(image.src, 'assets/posts/photo.webp or https://…');
+        const alt = makeInput(image.alt, 'Alt text');
+        const caption = makeInput(image.caption, 'Caption (optional)');
+        src.addEventListener('input', () => {
+            if (src.value.trim()) {
+                pending = null;
+                fileName.textContent = 'Using entered path';
+            }
+        });
+        fields.appendChild(picker);
+        fields.appendChild(src);
+        fields.appendChild(alt);
+        fields.appendChild(caption);
+
+        return {
+            element: fields,
+            getData: () => {
+                const data = { src: src.value.trim(), alt: alt.value.trim(), caption: caption.value.trim() };
+                if (pending) data._upload = pending;
+                return data;
+            }
+        };
+    }
+
+    function addImageBlock(image) {
+        const row = document.createElement('div');
+        row.className = 'block block-list';
+        const head = document.createElement('div');
+        head.className = 'block-head';
+        const label = document.createElement('div');
+        label.className = 'block-label';
+        label.textContent = 'Image';
+        head.appendChild(label);
+        head.appendChild(blockTools(row, $('blocksList'), null));
+
+        const media = makeBodyMediaFields(image || {});
+        row.appendChild(head);
+        row.appendChild(media.element);
+        row._getData = () => ({ type: 'image', ...media.getData() });
+        $('blocksList').appendChild(row);
+        return row;
+    }
+
+    function addGalleryBlock(images) {
+        const row = document.createElement('div');
+        row.className = 'block block-list';
+        const head = document.createElement('div');
+        head.className = 'block-head';
+        const label = document.createElement('div');
+        label.className = 'block-label';
+        label.textContent = 'Gallery';
+        head.appendChild(label);
+        head.appendChild(blockTools(row, $('blocksList'), null));
+
+        const imagesWrap = document.createElement('div');
+        imagesWrap.className = 'list-items';
+        const addGalleryImage = (image) => {
+            const item = document.createElement('div');
+            item.className = 'block block-list';
+            const media = makeBodyMediaFields(image || {});
+            media.element.classList.add('block-main');
+            item.appendChild(media.element);
+            item.appendChild(blockTools(item, imagesWrap, null));
+            item._getData = media.getData;
+            imagesWrap.appendChild(item);
+        };
+        (images && images.length ? images : [{}]).forEach((image) => {
+            addGalleryImage(typeof image === 'string' ? { src: image } : image);
+        });
+
+        const addBtn = document.createElement('button');
+        addBtn.type = 'button';
+        addBtn.className = 'add sub-add';
+        addBtn.textContent = '+ Add image';
+        addBtn.addEventListener('click', () => { addGalleryImage({}); markDirty(); });
+
+        row.appendChild(head);
+        row.appendChild(imagesWrap);
+        row.appendChild(addBtn);
+        row._getData = () => ({
+            type: 'gallery',
+            images: Array.from(imagesWrap.children)
+                .map((item) => item._getData ? item._getData() : null)
+                .filter((image) => image && (image.src || image._upload))
+        });
+        $('blocksList').appendChild(row);
+        return row;
+    }
+
     const collectPostBody = () => Array.from($('blocksList').children)
         .map((row) => row._getData ? row._getData() : null)
-        .filter((b) => b && (b.type === 'p' ? b.text : b.items.length));
+        .filter((b) => {
+            if (!b) return false;
+            if (b.type === 'ul') return b.items.length;
+            if (b.type === 'image') return b.src || b._upload;
+            if (b.type === 'gallery') return b.images.length;
+            return b.text;
+        });
 
     function putFile(pathName, contentB64, message, fileSha) {
         const body = { message, content: contentB64, branch: BRANCH };
@@ -687,6 +853,24 @@
         if (!res.ok) throw new Error('image upload failed (' + res.status + ')');
     }
 
+    async function prepareBodyMedia(body, slug) {
+        let mediaIndex = 0;
+        for (const block of body) {
+            const entries = block.type === 'gallery' ? block.images : (block.type === 'image' ? [block] : []);
+            for (const entry of entries) {
+                mediaIndex += 1;
+                if (entry._upload) {
+                    const pathName = `assets/posts/${slug}-inline-${String(mediaIndex).padStart(2, '0')}.${entry._upload.ext}`;
+                    setStatus('Uploading article image ' + mediaIndex + '…');
+                    await uploadImage(pathName, entry._upload.base64);
+                    entry.src = pathName;
+                }
+                delete entry._upload;
+            }
+        }
+        return body;
+    }
+
     async function publishPost() {
         const title = $('postTitle').value.trim();
         const slug = slugify($('postSlug').value.trim() || title);
@@ -703,7 +887,8 @@
                 imagePath = `assets/posts/${slug}.${pendingImage.ext}`;
                 await uploadImage(imagePath, pendingImage.base64);
             }
-            const post = { slug, title, date: todayStamp(), body: collectPostBody(), published: $('postPublished').checked };
+            const body = await prepareBodyMedia(collectPostBody(), slug);
+            const post = { slug, title, date: todayStamp(), body, published: $('postPublished').checked };
             if (imagePath) post.image = imagePath;
             const next = posts.slice();
             if (editingIndex >= 0) next[editingIndex] = post; else next.push(post);
