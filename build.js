@@ -100,7 +100,7 @@ const assetHref = (src) => {
 const renderPreviewMedia = (post) => {
     const videoSrc = assetHref(post.video);
     if (videoSrc) {
-        return `<video src="${escapeHtml(videoSrc)}" controls muted loop playsinline preload="metadata" aria-label="${escapeHtml(post.title || 'Note preview video')}"></video>`;
+        return `<video src="${escapeHtml(videoSrc)}" controls muted loop playsinline preload="metadata" aria-label="${escapeHtml(post.title || 'Post preview video')}"></video>`;
     }
     const imageSrc = assetHref(post.image);
     if (!imageSrc) return '';
@@ -220,9 +220,14 @@ const renderStatusCard = (update) => {
     // feed uses a class so the live count can update in both places.
     const status = String(update.text).replace(/id=(['"])inat-count\1/g, 'class="inat-count"');
     const likeId = `update-${update.id || stableLikeHash(update.text)}`;
+    const previewMedia = renderPreviewMedia(update);
+    const media = previewMedia ? `
+                    <figure class="feed-post-media">
+                        ${previewMedia}
+                    </figure>` : '';
     return `                <article class="feed-item feed-item--status" data-feed-id="${likeId}">
                     <div class="feed-meta"><time>${escapeHtml(updateDate(update))}</time></div>
-                    <p class="feed-status">${status}</p>${renderLikeButton(likeId, 'update')}
+                    <p class="feed-status">${status}</p>${media}${renderLikeButton(likeId, 'update')}
                 </article>`;
 };
 

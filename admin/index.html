@@ -187,7 +187,7 @@
             <input type="text" id="postSlug" placeholder="my-post">
         </section>
 
-        <section class="note-only">
+        <section>
             <div class="label"><span>Preview media</span><span class="hint">optional image or WebM &middot; shown before expansion</span></div>
             <div class="img-field">
                 <img class="img-preview empty" id="imgPreview" alt="">
@@ -692,8 +692,8 @@
             });
             else addParagraphBlock('');
         }
-        currentMediaPath = (!isStatus && post && (post.video || post.image)) || '';
-        currentMediaKind = (!isStatus && post && post.video) ? 'video' : (currentMediaPath ? 'image' : '');
+        currentMediaPath = (post && (post.video || post.image)) || '';
+        currentMediaKind = (post && post.video) ? 'video' : (currentMediaPath ? 'image' : '');
         setMediaPreview(currentMediaPath ? `https://justinmartin.wiki/${currentMediaPath}?t=${Date.now()}` : null, currentMediaKind);
         $('postPublished').checked = post ? !!post.published : true;
         $('postDelete').style.display = post ? '' : 'none';
@@ -1004,6 +1004,18 @@
         return body;
     }
 
+    async function preparePreviewMedia(fileStem) {
+        let mediaPath = currentMediaPath;
+        let mediaKind = currentMediaKind;
+        if (pendingMedia) {
+            mediaPath = `assets/posts/${fileStem}.${pendingMedia.ext}`;
+            mediaKind = pendingMedia.kind;
+            setStatus('Uploading preview ' + mediaKind + '…');
+            await uploadMedia(mediaPath, pendingMedia.base64, mediaKind);
+        }
+        return { mediaPath, mediaKind };
+    }
+
     async function publishUpdate() {
         const existing = editingIndex >= 0 ? updates[editingIndex] : null;
         if (editingType === 'status') {
@@ -1012,13 +1024,17 @@
             publishBtn.disabled = true;
             setStatus('Publishing…');
             try {
+                const statusId = (existing && existing.id) || ('s-' + Date.now().toString(36));
+                const { mediaPath, mediaKind } = await preparePreviewMedia(statusId);
                 const statusUpdate = {
-                    id: (existing && existing.id) || ('s-' + Date.now().toString(36)),
+                    id: statusId,
                     type: 'status',
                     text,
                     createdAt: (existing && existing.createdAt) || new Date().toISOString(),
                     published: $('postPublished').checked
                 };
+                if (mediaPath && mediaKind === 'video') statusUpdate.video = mediaPath;
+                else if (mediaPath) statusUpdate.image = mediaPath;
                 const next = updates.slice();
                 if (editingIndex >= 0) next[editingIndex] = statusUpdate; else next.push(statusUpdate);
                 next.sort((a, b) => updateTime(b) - updateTime(a));
@@ -1050,13 +1066,7 @@
         publishBtn.disabled = true;
         setStatus('Publishing…');
         try {
-            let mediaPath = currentMediaPath;
-            let mediaKind = currentMediaKind;
-            if (pendingMedia) {
-                mediaPath = `assets/posts/${slug}.${pendingMedia.ext}`;
-                mediaKind = pendingMedia.kind;
-                await uploadMedia(mediaPath, pendingMedia.base64, mediaKind);
-            }
+            const { mediaPath, mediaKind } = await preparePreviewMedia(slug);
             const body = await prepareBodyMedia(collectPostBody(), slug);
             const post = {
                 id: (existing && existing.id) || slug,
