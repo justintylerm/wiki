@@ -97,6 +97,16 @@ const assetHref = (src) => {
     return /^(?:https?:|data:|\/)/i.test(value) ? value : `/${value}`;
 };
 
+const renderPreviewMedia = (post) => {
+    const videoSrc = assetHref(post.video);
+    if (videoSrc) {
+        return `<video src="${escapeHtml(videoSrc)}" controls muted loop playsinline preload="metadata" aria-label="${escapeHtml(post.title || 'Note preview video')}"></video>`;
+    }
+    const imageSrc = assetHref(post.image);
+    if (!imageSrc) return '';
+    return `<img src="${escapeHtml(imageSrc)}" alt="${escapeHtml(post.imageAlt || post.title || '')}" loading="lazy" decoding="async">`;
+};
+
 const renderFeedBlock = (rawBlock) => {
     const block = normalizeBlock(rawBlock);
     if (block.type === 'ul') {
@@ -222,9 +232,10 @@ const renderNoteCard = (post) => {
     const summary = summaryIndex >= 0 ? blocks[summaryIndex].text : '';
     const expandedBlocks = blocks.filter((block, index) => index !== summaryIndex)
         .map(renderFeedBlock).filter(Boolean).join('\n                            ');
-    const image = post.image ? `
+    const previewMedia = renderPreviewMedia(post);
+    const media = previewMedia ? `
                     <figure class="feed-post-media">
-                        <img src="${escapeHtml(assetHref(post.image))}" alt="${escapeHtml(post.imageAlt || post.title || '')}" loading="lazy" decoding="async">
+                        ${previewMedia}
                     </figure>` : '';
     const bodyId = `feed-post-body-${escapeHtml(post.slug)}`;
     const expandable = expandedBlocks ? `
@@ -243,7 +254,7 @@ const renderNoteCard = (post) => {
     return `                <article class="feed-item feed-item--post" id="post-${escapeHtml(post.slug)}" data-post-slug="${escapeHtml(post.slug)}" data-feed-id="${escapeHtml(likeId)}">
                     <div class="feed-meta"><time>${escapeHtml(updateDate(post))}</time></div>
                     <h2 class="feed-post-title">${escapeHtml(post.title || 'Untitled')}</h2>
-                    ${summary ? `<p class="feed-post-summary">${summary}</p>` : ''}${image}${expandable}${renderLikeButton(likeId, 'note')}
+                    ${summary ? `<p class="feed-post-summary">${summary}</p>` : ''}${media}${expandable}${renderLikeButton(likeId, 'note')}
                 </article>`;
 };
 

@@ -188,13 +188,14 @@
         </section>
 
         <section class="note-only">
-            <div class="label"><span>Preview image</span><span class="hint">optional &middot; shown before expansion</span></div>
+            <div class="label"><span>Preview media</span><span class="hint">optional image or WebM &middot; shown before expansion</span></div>
             <div class="img-field">
                 <img class="img-preview empty" id="imgPreview" alt="">
+                <video class="img-preview empty" id="videoPreview" muted loop autoplay playsinline></video>
                 <div class="img-actions">
-                    <button type="button" class="file-btn" id="imgPick">Choose image&hellip;</button>
-                    <button type="button" class="link-btn danger" id="imgRemove" style="display:none">Remove image</button>
-                    <input type="file" id="imgFile" accept="image/*">
+                    <button type="button" class="file-btn" id="imgPick">Choose image or WebM&hellip;</button>
+                    <button type="button" class="link-btn danger" id="imgRemove" style="display:none">Remove media</button>
+                    <input type="file" id="imgFile" accept="image/*,video/webm,.webm">
                 </div>
             </div>
         </section>
@@ -255,8 +256,9 @@
     let mode = 'home';        // 'home' | 'updates' | 'editor'
     let editingIndex = -1;    // index of the update being edited, -1 = new
     let editingType = 'status';
-    let currentImagePath = '';// existing image path on the post being edited
-    let pendingImage = null;  // { base64, ext } staged upload, if any
+    let currentMediaPath = '';// existing preview-media path on the post being edited
+    let currentMediaKind = '';// 'image' | 'video'
+    let pendingMedia = null;  // { base64, ext, kind, previewUrl } staged upload, if any
     let slugTouched = false;  // has the user hand-edited the slug?
 
     // ---------- utils ----------
@@ -600,10 +602,23 @@
     $('newStatus').addEventListener('click', () => switchToUpdate(-1, 'status'));
     $('newNote').addEventListener('click', () => switchToUpdate(-1, 'note'));
 
-    function setImagePreview(url) {
+    function setMediaPreview(url, kind) {
         const img = $('imgPreview');
-        if (url) { img.src = url; img.classList.remove('empty'); $('imgRemove').style.display = ''; }
-        else { img.removeAttribute('src'); img.classList.add('empty'); $('imgRemove').style.display = 'none'; }
+        const video = $('videoPreview');
+        img.removeAttribute('src');
+        video.removeAttribute('src');
+        video.load();
+        img.classList.add('empty');
+        video.classList.add('empty');
+        if (url && kind === 'video') {
+            video.src = url;
+            video.classList.remove('empty');
+            video.play().catch(() => {});
+        } else if (url) {
+            img.src = url;
+            img.classList.remove('empty');
+        }
+        $('imgRemove').style.display = url ? '' : 'none';
     }
 
     // Downscale + re-encode client-side so uploads stay small. Prefers WebP, falls back to JPEG.
@@ -631,9 +646,26 @@
         });
     }
 
+    function readWebm(file) {
+        const maxBytes = 15 * 1024 * 1024;
+        if (file.size > maxBytes) return Promise.reject(new Error('WebM must be smaller than 15 MB'));
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => {
+                const dataUrl = String(reader.result || '');
+                const base64 = dataUrl.split(',')[1];
+                if (!base64) return reject(new Error('could not read WebM'));
+                resolve({ base64, ext: 'webm', kind: 'video', previewUrl: URL.createObjectURL(file) });
+            };
+            reader.onerror = () => reject(new Error('could not read WebM'));
+            reader.readAsDataURL(file);
+        });
+    }
+
     function renderUpdateForm(post) {
         const isStatus = editingType === 'status';
-        pendingImage = null;
+        if (pendingMedia && pendingMedia.previewUrl) URL.revokeObjectURL(pendingMedia.previewUrl);
+        pendingMedia = null;
         slugTouched = !!(post && post.slug);
         $('postHeading').textContent = post ? 'Edit update' : 'New update';
         $('editorType').textContent = isStatus ? 'Status update' : 'Full note';
@@ -660,8 +692,9 @@
             });
             else addParagraphBlock('');
         }
-        currentImagePath = (!isStatus && post && post.image) || '';
-        setImagePreview(currentImagePath ? `https://justinmartin.wiki/${currentImagePath}?t=${Date.now()}` : null);
+        currentMediaPath = (!isStatus && post && (post.video || post.image)) || '';
+        currentMediaKind = (!isStatus && post && post.video) ? 'video' : (currentMediaPath ? 'image' : '');
+        setMediaPreview(currentMediaPath ? `https://justinmartin.wiki/${currentMediaPath}?t=${Date.now()}` : null, currentMediaKind);
         $('postPublished').checked = post ? !!post.published : true;
         $('postDelete').style.display = post ? '' : 'none';
         dirty = false;
@@ -945,12 +978,12 @@
         updatesSha = (await res.json()).content.sha;
     }
 
-    async function uploadImage(pathName, base64) {
+    async function uploadMedia(pathName, base64, label) {
         let fileSha;
         const cur = await gh(`/contents/${pathName}?ref=${BRANCH}`);
         if (cur.ok) fileSha = (await cur.json()).sha;
-        const res = await putFile(pathName, base64, 'Add post image: ' + pathName, fileSha);
-        if (!res.ok) throw new Error('image upload failed (' + res.status + ')');
+        const res = await putFile(pathName, base64, 'Add post ' + (label || 'media') + ': ' + pathName, fileSha);
+        if (!res.ok) throw new Error((label || 'media') + ' upload failed (' + res.status + ')');
     }
 
     async function prepareBodyMedia(body, slug) {
@@ -962,7 +995,7 @@
                 if (entry._upload) {
                     const pathName = `assets/posts/${slug}-inline-${String(mediaIndex).padStart(2, '0')}.${entry._upload.ext}`;
                     setStatus('Uploading article image ' + mediaIndex + '…');
-                    await uploadImage(pathName, entry._upload.base64);
+                    await uploadMedia(pathName, entry._upload.base64, 'image');
                     entry.src = pathName;
                 }
                 delete entry._upload;
@@ -1017,10 +1050,12 @@
         publishBtn.disabled = true;
         setStatus('Publishing…');
         try {
-            let imagePath = currentImagePath;
-            if (pendingImage) {
-                imagePath = `assets/posts/${slug}.${pendingImage.ext}`;
-                await uploadImage(imagePath, pendingImage.base64);
+            let mediaPath = currentMediaPath;
+            let mediaKind = currentMediaKind;
+            if (pendingMedia) {
+                mediaPath = `assets/posts/${slug}.${pendingMedia.ext}`;
+                mediaKind = pendingMedia.kind;
+                await uploadMedia(mediaPath, pendingMedia.base64, mediaKind);
             }
             const body = await prepareBodyMedia(collectPostBody(), slug);
             const post = {
@@ -1033,7 +1068,8 @@
                 body,
                 published: $('postPublished').checked
             };
-            if (imagePath) post.image = imagePath;
+            if (mediaPath && mediaKind === 'video') post.video = mediaPath;
+            else if (mediaPath) post.image = mediaPath;
             const next = updates.slice();
             if (editingIndex >= 0) next[editingIndex] = post; else next.push(post);
             next.sort((a, b) => updateTime(b) - updateTime(a));
@@ -1070,14 +1106,20 @@
         e.target.value = '';
         if (!file) return;
         try {
-            const r = await downscaleImage(file);
-            pendingImage = { base64: r.base64, ext: r.ext };
-            setImagePreview(r.dataUrl);
+            if (pendingMedia && pendingMedia.previewUrl) URL.revokeObjectURL(pendingMedia.previewUrl);
+            const isWebm = file.type === 'video/webm' || /\.webm$/i.test(file.name);
+            if (file.type.startsWith('video/') && !isWebm) throw new Error('Only WebM video is supported');
+            const r = isWebm ? await readWebm(file) : await downscaleImage(file);
+            pendingMedia = isWebm
+                ? r
+                : { base64: r.base64, ext: r.ext, kind: 'image', previewUrl: '' };
+            setMediaPreview(isWebm ? r.previewUrl : r.dataUrl, pendingMedia.kind);
             markDirty();
-        } catch (err) { setStatus('Image error: ' + err.message, 'err'); }
+        } catch (err) { setStatus('Media error: ' + err.message, 'err'); }
     });
     $('imgRemove').addEventListener('click', () => {
-        pendingImage = null; currentImagePath = ''; setImagePreview(null); markDirty();
+        if (pendingMedia && pendingMedia.previewUrl) URL.revokeObjectURL(pendingMedia.previewUrl);
+        pendingMedia = null; currentMediaPath = ''; currentMediaKind = ''; setMediaPreview(null, ''); markDirty();
     });
     $('postDelete').addEventListener('click', async () => {
         if (editingIndex < 0) return;
