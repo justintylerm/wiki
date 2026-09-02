@@ -1,16 +1,5 @@
 [
   {
-    "id": "markdown-app-demo",
-    "type": "note",
-    "slug": "markdown-app-demo",
-    "title": "what if rearranging a markdown note was drag & drop?",
-    "createdAt": "2026-09-02T00:30:40.438Z",
-    "date": "09-01-26",
-    "body": [],
-    "published": true,
-    "video": "assets/posts/markdown-app-demo.webm"
-  },
-  {
     "id": "life-upgrades",
     "type": "note",
     "slug": "life-upgrades",
