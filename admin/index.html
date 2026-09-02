@@ -407,13 +407,16 @@
         };
     }
 
-    async function pollDeploy() {
+    async function pollDeploy(expectedSha) {
         for (let i = 0; i < 40; i++) {
             await new Promise((r) => setTimeout(r, 4000));
-            const res = await gh('/actions/runs?per_page=1');
+            const query = expectedSha
+                ? `?head_sha=${encodeURIComponent(expectedSha)}&per_page=1`
+                : '?per_page=1';
+            const res = await gh('/actions/runs' + query);
             if (!res.ok) return;
             const run = (await res.json()).workflow_runs?.[0];
-            if (!run) return;
+            if (!run) { setStatus('Deploy queued…'); continue; }
             if (run.status === 'completed') {
                 if (run.conclusion === 'success') setStatus('Live ✓', 'ok');
                 else setStatus('Deploy failed — check GitHub Actions', 'err');
@@ -428,6 +431,7 @@
         setStatus('Publishing…');
         try {
             const content = collect();
+            let result;
             const body = {
                 message: 'Update wiki content via admin',
                 content: b64encode(JSON.stringify(content, null, 2) + '\n'),
@@ -441,16 +445,17 @@
                 body.sha = sha;
                 const retry = await gh(`/contents/${FILE}`, { method: 'PUT', body: JSON.stringify(body) });
                 if (!retry.ok) throw new Error('publish failed (' + retry.status + ')');
-                sha = (await retry.json()).content.sha;
+                result = await retry.json();
             } else if (!res.ok) {
                 throw new Error('publish failed (' + res.status + ')');
             } else {
-                sha = (await res.json()).content.sha;
+                result = await res.json();
             }
+            sha = result.content.sha;
             loadedContent = content;
             dirty = false;
             setStatus('Published, deploying…');
-            pollDeploy();
+            pollDeploy(result.commit && result.commit.sha);
         } catch (err) {
             setStatus(err.message, 'err');
             publishBtn.disabled = false;
@@ -975,7 +980,9 @@
             res = await putFile('updates.json', payload(), message, updatesSha);
         }
         if (!res.ok) throw new Error('publish failed (' + res.status + ')');
-        updatesSha = (await res.json()).content.sha;
+        const result = await res.json();
+        updatesSha = result.content.sha;
+        return result.commit && result.commit.sha;
     }
 
     async function uploadMedia(pathName, base64, label) {
@@ -1038,7 +1045,7 @@
                 const next = updates.slice();
                 if (editingIndex >= 0) next[editingIndex] = statusUpdate; else next.push(statusUpdate);
                 next.sort((a, b) => updateTime(b) - updateTime(a));
-                await saveUpdates(next, (editingIndex >= 0 ? 'Update status: ' : 'Add status: ') + statusUpdate.id);
+                const deploySha = await saveUpdates(next, (editingIndex >= 0 ? 'Update status: ' : 'Add status: ') + statusUpdate.id);
                 updates = next;
                 dirty = false;
                 mode = 'updates';
@@ -1048,7 +1055,7 @@
                 renderUpdatesList();
                 renderNav();
                 setStatus('Published, deploying…');
-                pollDeploy();
+                pollDeploy(deploySha);
             } catch (err) {
                 setStatus(err.message, 'err');
                 publishBtn.disabled = false;
@@ -1083,7 +1090,7 @@
             const next = updates.slice();
             if (editingIndex >= 0) next[editingIndex] = post; else next.push(post);
             next.sort((a, b) => updateTime(b) - updateTime(a));
-            await saveUpdates(next, (editingIndex >= 0 ? 'Update note: ' : 'Add note: ') + slug);
+            const deploySha = await saveUpdates(next, (editingIndex >= 0 ? 'Update note: ' : 'Add note: ') + slug);
             updates = next;
             dirty = false;
             mode = 'updates';
@@ -1093,7 +1100,7 @@
             renderUpdatesList();
             renderNav();
             setStatus('Published, deploying…');
-            pollDeploy();
+            pollDeploy(deploySha);
         } catch (err) {
             setStatus(err.message, 'err');
             publishBtn.disabled = false;
@@ -1141,7 +1148,7 @@
         try {
             const next = updates.slice();
             next.splice(editingIndex, 1);
-            await saveUpdates(next, 'Delete update: ' + (p.id || p.slug || ''));
+            const deploySha = await saveUpdates(next, 'Delete update: ' + (p.id || p.slug || ''));
             updates = next;
             dirty = false;
             mode = 'updates';
@@ -1150,7 +1157,7 @@
             renderUpdatesList();
             renderNav();
             setStatus('Deleted, deploying…');
-            pollDeploy();
+            pollDeploy(deploySha);
         } catch (err) { setStatus(err.message, 'err'); publishBtn.disabled = false; }
     });
 

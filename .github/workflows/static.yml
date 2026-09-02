@@ -31,6 +31,10 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          # Media publishing creates consecutive commits. Always build the branch
+          # tip so a delayed workflow for the earlier commit cannot redeploy stale content.
+          ref: main
       - name: Build index.html from content.json
         run: node build.js
       - name: Setup Pages
