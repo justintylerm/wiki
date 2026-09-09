@@ -1,0 +1,25 @@
+name: Check MCP service
+on:
+  pull_request:
+    paths: ['mcp-service/**', 'content.json', 'updates.json', 'index.html', '.github/workflows/mcp-check.yml']
+  push:
+    branches: ['main']
+    paths: ['mcp-service/**', 'content.json', 'updates.json', 'index.html', '.github/workflows/mcp-check.yml']
+permissions:
+  contents: read
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: mcp-service
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: mcp-service/package-lock.json
+      - run: npm ci
+      - run: npm test
+      - run: npm run check

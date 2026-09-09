@@ -1,0 +1,18 @@
+{
+  "name": "justin-martin-mcp",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "test": "node --test",
+    "check": "wrangler deploy --dry-run --outdir dist"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "1.30.0",
+    "html-to-text": "^9.0.5",
+    "zod": "^3.25.76"
+  },
+  "devDependencies": { "wrangler": "4.130.0" }
+}
