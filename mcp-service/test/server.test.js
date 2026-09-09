@@ -26,12 +26,28 @@ test('real MCP client initializes, lists and calls tools over HTTP', async () =>
     const call = async (name, args = {}) => JSON.parse((await client.callTool({ name, arguments: args })).content[0].text);
     const profile = await call('get_profile');
     assert.equal(profile.name, 'Justin Martin');
+    assert.equal(profile.professional_background.headline, 'Product Manager at Supper Co.');
+    assert.equal(profile.professional_background.experience.length, 8);
+    assert.equal(profile.professional_background.experience.filter(role => role.end === null).length, 2);
+    assert.equal(profile.professional_background.source.as_of, '2026-09-08');
     assert.ok(!JSON.stringify(profile).includes('<span'));
     assert.ok((await call('search_content', { query: 'music' })).results.some(p => p.id === 'profile'));
     assert.deepEqual((await call('search_content', { query: 'draft-only-needle' })).results, []);
     assert.equal((await call('get_page', { id: 'secret-draft' })).error, 'Published page not found. Use search_content to find a page ID.');
     assert.equal((await call('get_page', { id: 'profile' })).source_url, 'https://justinmartin.wiki/');
     assert.ok((await call('get_contact')).links.includes('https://www.instagram.com/justinm/'));
+    const contact = await call('get_contact');
+    assert.equal(contact.email, undefined);
+    assert.ok(!Object.hasOwn(profile.professional_background, 'email'));
+    assert.ok(!JSON.stringify(data).match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i));
+    assert.ok(contact.links.includes('https://www.linkedin.com/in/justintylermartin'));
+    const career = await call('get_page', { id: 'career' });
+    assert.ok(career.text.includes('over 500 real estate agents'));
+    assert.equal(career.professional_background.education[0].field, 'Electronic Media Production');
+    assert.equal(career.professional_background.education[0].degree, undefined);
+    const search = await call('search_content', { query: 'Film Appeal' });
+    assert.equal(search.results[0].id, 'career');
+    assert.equal(search.results[0].source.as_of, '2026-09-08');
     const invalid = await client.callTool({ name: 'search_content', arguments: { query: 'music', limit: 1000 } });
     assert.equal(invalid.isError, true);
   } finally { await client.close(); }

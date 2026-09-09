@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Talk to my wiki — Justin Martin</title>
-  <meta name="description" content="Connect your AI assistant to Justin Martin’s public bio, interests, notes, and updates.">
+  <meta name="description" content="Connect your AI assistant to Justin Martin’s bio, professional background, notes, and updates.">
   <link rel="canonical" href="https://justinmartin.wiki/mcp/">
   <link rel="icon" href="/assets/png-354cc08a9867.png">
   <style>
@@ -14,7 +14,7 @@
 <body>
 <main>
   <nav><a href="/">← Justin Martin</a></nav>
-  <header><span class="eyebrow">MCP server</span><h1>Talk to my wiki.</h1><p>Bring my bio, interests, and published notes into your AI conversations. Ask a question and your assistant can look it up here.</p></header>
+  <header><span class="eyebrow">MCP server</span><h1>Talk to my wiki.</h1><p>Bring my bio, work history, and published notes into your AI conversations. Ask a question and your assistant can look it up here.</p></header>
   <section aria-labelledby="connect"><h2 id="connect">Connect your assistant</h2>
     <p id="status" role="status">The connection URL will appear here once the server is live.</p>
     <div id="connection" hidden>
@@ -24,14 +24,14 @@
     </div>
     <noscript><p>Enable JavaScript to display the connection details.</p></noscript>
   </section>
-  <section><h2>Try asking</h2><ul><li>Who is Justin Martin?</li><li>What tools does Justin use?</li><li>What has Justin written about recently?</li><li>What are Justin’s interests outside work?</li></ul></section>
+  <section><h2>Try asking</h2><ul><li>Who is Justin Martin?</li><li>What tools does Justin use?</li><li>What is Justin’s background in design and product?</li><li>What are Justin’s interests outside work?</li></ul></section>
   <section><h2>What your assistant can read</h2><dl>
-    <dt>get_profile</dt><dd>My bio, interests, and software setup.</dd>
-    <dt>search_content</dt><dd>Search my bio and published notes and updates.</dd>
+    <dt>get_profile</dt><dd>My bio, work history, skills, education, interests, and setup.</dd>
+    <dt>search_content</dt><dd>Search my bio, career history, and published notes and updates.</dd>
     <dt>get_page</dt><dd>Read a result in full, with a link back to the wiki.</dd>
-    <dt>get_contact</dt><dd>Find my published social profile links.</dd>
+    <dt>get_contact</dt><dd>Find my social profile links.</dd>
   </dl></section>
-  <footer>Public content only. These tools read the wiki; they cannot edit it or send messages.</footer>
+  <footer>Wiki content and my supplied LinkedIn profile export. Career details are a September 2026 snapshot. These tools read the wiki; they cannot edit it or send messages.</footer>
 </main>
 <script>
   fetch('./config.json').then(response => {

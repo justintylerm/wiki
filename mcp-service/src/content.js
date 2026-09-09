@@ -1,4 +1,5 @@
 import { convert } from 'html-to-text';
+import professional from './profile.json' with { type: 'json' };
 
 const site = 'https://justinmartin.wiki/';
 const source = 'https://raw.githubusercontent.com/justintylerm/wiki/main/';
@@ -22,17 +23,33 @@ export function makeContent(content, updates, html) {
     bio: content.bio.map(plain),
     hobbies: (content.hobbies ?? []).map(h => ({ label: plain(h.label), ...(h.url ? { url: h.url } : {}) })),
     setup: (content.setup ?? []).map(plain),
+    professional_background: professional,
     source_url: site,
+    sources: [{ source_url: site }, professional.source],
   };
   const contact = {
     name: profile.name,
-    links: (person.sameAs ?? []).filter(url => typeof url === 'string' && /^https:\/\//.test(url)),
+    links: [...new Set([professional.linkedin, ...(person.sameAs ?? [])])].filter(url => typeof url === 'string' && /^https:\/\//.test(url)),
     source_url: site,
-    note: 'Public profile links only. No email address or availability is provided by this source.',
+    sources: [{ source_url: site }, professional.source],
+    note: 'The LinkedIn link comes from the user-provided profile export. No availability is provided by these sources.',
   };
   const pages = [{
     id: 'profile', title: 'About Justin Martin', source_url: site,
     text: [profile.greeting, ...profile.bio, 'Interests: ' + profile.hobbies.map(h => h.label).join(', '), 'Setup: ' + profile.setup.join(', ')].join('\n\n'),
+  }, {
+    id: 'career', title: 'Justin Martin — professional background and experience',
+    source_url: professional.source.source_url,
+    source: professional.source,
+    text: [
+      professional.headline, professional.location,
+      `Profile snapshot: ${professional.source.as_of}. ${professional.source.note}`,
+      'Top skills: ' + professional.top_skills.join(', '),
+      'Honors and awards: ' + professional.honors_awards.join(', '),
+      ...professional.experience.map(role => `${role.title} at ${role.company} (${role.start} to ${role.end ?? 'Present in the September 2026 snapshot'}). ${role.summary ?? ''}`),
+      ...professional.education.map(item => `${item.school}: ${item.field}, ${item.start_year}–${item.end_year}.`),
+    ].join('\n\n'),
+    professional_background: professional,
   }, ...updates.filter(p => p?.published === true && ['status', 'note'].includes(p.type)).map(p => ({
     id: p.slug || p.id,
     title: plain(p.title || p.text).slice(0, 140),
@@ -73,5 +90,5 @@ export function searchPages(pages, query, limit) {
     const score = terms.reduce((n, term) => n + (title.includes(term) ? 3 : 0) + (body.includes(term) ? 1 : 0), 0);
     return { page, score };
   }).filter(item => item.score > 0).sort((a, b) => b.score - a.score).slice(0, limit)
-    .map(({ page }) => ({ id: page.id, title: page.title, source_url: page.source_url, excerpt: page.text.slice(0, 500) }));
+    .map(({ page }) => ({ id: page.id, title: page.title, source_url: page.source_url, ...(page.source ? { source: page.source } : {}), excerpt: page.text.slice(0, 500) }));
 }
