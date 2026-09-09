@@ -1,5 +1,6 @@
 import { convert } from 'html-to-text';
 import professional from './profile.json' with { type: 'json' };
+import story from './story.json' with { type: 'json' };
 
 const site = 'https://justinmartin.wiki/';
 const source = 'https://raw.githubusercontent.com/justintylerm/wiki/main/';
@@ -13,6 +14,15 @@ function blockText(block) {
   return plain(block.text || block.caption || block.alt || '');
 }
 
+function storyText(value) {
+  return value.sections.flatMap(section => [
+    section.heading,
+    ...(section.paragraphs ?? []),
+    ...(section.fun_facts ?? []),
+    ...(section.moments ?? []),
+  ]).join('\n\n');
+}
+
 export function makeContent(content, updates, html) {
   if (!Array.isArray(content.bio) || !Array.isArray(updates)) throw new Error('Invalid public content');
   const scripts = [...html.matchAll(/<script\b[^>]*type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi)];
@@ -23,9 +33,10 @@ export function makeContent(content, updates, html) {
     bio: content.bio.map(plain),
     hobbies: (content.hobbies ?? []).map(h => ({ label: plain(h.label), ...(h.url ? { url: h.url } : {}) })),
     setup: (content.setup ?? []).map(plain),
+    life_story: story,
     professional_background: professional,
     source_url: site,
-    sources: [{ source_url: site }, professional.source],
+    sources: [{ source_url: site }, story.source, professional.source],
   };
   const contact = {
     name: profile.name,
@@ -37,6 +48,12 @@ export function makeContent(content, updates, html) {
   const pages = [{
     id: 'profile', title: 'About Justin Martin', source_url: site,
     text: [profile.greeting, ...profile.bio, 'Interests: ' + profile.hobbies.map(h => h.label).join(', '), 'Setup: ' + profile.setup.join(', ')].join('\n\n'),
+  }, {
+    id: 'story', title: "Justin Martin's life story",
+    source_url: story.source.source_url,
+    source: story.source,
+    text: storyText(story),
+    life_story: story,
   }, {
     id: 'career', title: 'Justin Martin — professional background and experience',
     source_url: professional.source.source_url,
