@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Talk to my wiki — Justin Martin</title>
+  <meta name="description" content="Connect your AI assistant to Justin Martin’s bio, professional background, notes, and updates.">
+  <link rel="canonical" href="https://justinmartin.wiki/mcp/">
+  <link rel="icon" href="/assets/png-354cc08a9867.png">
+  <style>
+    *{box-sizing:border-box}body{margin:0;background:#fff;color:#111;font:16px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;letter-spacing:-.015em}main{max-width:680px;padding:40px 24px 80px;margin:auto}a{color:inherit;text-underline-offset:4px}header{margin:64px 0 40px}.eyebrow{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:#777}h1{font-size:clamp(36px,7vw,52px);font-weight:400;letter-spacing:-.045em;line-height:1.1;margin:12px 0 24px}h2{font-size:20px;font-weight:500;margin:0 0 18px}p{color:#666}section{border-top:1px solid #e8e8e8;padding:28px 0}code{font-size:13px;overflow-wrap:anywhere}pre{white-space:pre-wrap;background:#f6f6f6;padding:18px;border-radius:8px;overflow-wrap:anywhere}button{font:inherit;background:#111;color:white;border:0;border-radius:6px;padding:10px 16px;cursor:pointer}button:focus-visible,a:focus-visible{outline:2px solid #777;outline-offset:4px}dl{margin:0}dt{font-family:monospace;font-size:14px;margin-top:20px}dd{margin:4px 0;color:#666}li{margin:10px 0}footer{font-size:13px;color:#777}#status{font-size:14px}nav{font-size:14px}[hidden]{display:none!important}
+  </style>
+</head>
+<body>
+<main>
+  <nav><a href="/">← Justin Martin</a></nav>
+  <header><span class="eyebrow">MCP server</span><h1>Talk to my wiki.</h1><p>Bring my bio, work history, and published notes into your AI conversations. Ask a question and your assistant can look it up here.</p></header>
+  <section aria-labelledby="connect"><h2 id="connect">Connect your assistant</h2>
+    <p id="status" role="status">The connection URL will appear here once the server is live.</p>
+    <div id="connection" hidden>
+      <p>Add this URL as a remote MCP server in an assistant that supports MCP:</p>
+      <pre><code id="endpoint"></code></pre><button id="copy" type="button">Copy URL</button>
+      <p>For Claude Code, run:</p><pre><code id="command"></code></pre>
+    </div>
+    <noscript><p>Enable JavaScript to display the connection details.</p></noscript>
+  </section>
+  <section><h2>Try asking</h2><ul><li>Who is Justin Martin?</li><li>What tools does Justin use?</li><li>What is Justin’s background in design and product?</li><li>What are Justin’s interests outside work?</li></ul></section>
+  <section><h2>What your assistant can read</h2><dl>
+    <dt>get_profile</dt><dd>My bio, work history, skills, education, interests, and setup.</dd>
+    <dt>search_content</dt><dd>Search my bio, career history, and published notes and updates.</dd>
+    <dt>get_page</dt><dd>Read a result in full, with a link back to the wiki.</dd>
+    <dt>get_contact</dt><dd>Find my social profile links.</dd>
+  </dl></section>
+  <footer>Wiki content and my supplied LinkedIn profile export. Career details are a September 2026 snapshot. These tools read the wiki; they cannot edit it or send messages.</footer>
+</main>
+<script>
+  fetch('./config.json').then(response => {
+    if (!response.ok) throw new Error('Configuration unavailable');
+    return response.json();
+  }).then(({endpoint}) => {
+    if (!endpoint) return;
+    const url = new URL(endpoint);
+    if (url.protocol !== 'https:' || url.username || url.password || url.search || url.hash || url.pathname !== '/mcp') throw new Error('Invalid endpoint');
+    document.getElementById('endpoint').textContent = url.href;
+    document.getElementById('command').textContent = 'claude mcp add --transport http justin-martin ' + url.href;
+    document.getElementById('connection').hidden = false;
+    document.getElementById('status').textContent = 'No account or API key required.';
+    document.getElementById('copy').addEventListener('click', async () => {
+      try { await navigator.clipboard.writeText(url.href); document.getElementById('status').textContent = 'Connection URL copied.'; }
+      catch { document.getElementById('status').textContent = 'Select and copy the URL above.'; }
+    });
+  }).catch(() => { document.getElementById('status').textContent = 'Connection details are temporarily unavailable. Please try again later.'; });
+</script>
+</body>
+</html>

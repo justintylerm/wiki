@@ -1,0 +1,84 @@
+{
+  "source": {
+    "document": "Profile.pdf",
+    "type": "User-provided LinkedIn profile export",
+    "as_of": "2026-09-08",
+    "source_url": "https://www.linkedin.com/in/justintylermartin",
+    "note": "Transcribed from the supplied PDF, not fetched from live LinkedIn. Present means current in this snapshot. Both Supper Product Manager and Communications Manager are listed as Present; no end date has been inferred."
+  },
+  "headline": "Product Manager at Supper Co.",
+  "location": "Springfield, Missouri, United States",
+  "linkedin": "https://www.linkedin.com/in/justintylermartin",
+  "top_skills": [
+    "Logo Design",
+    "Graphic Design",
+    "Branding & Identity"
+  ],
+  "honors_awards": [
+    "Logo Lounge Book 13",
+    "2022 Logo Trend Report"
+  ],
+  "experience": [
+    {
+      "company": "Supper Co.",
+      "title": "Product Manager",
+      "start": "2026-08",
+      "end": null
+    },
+    {
+      "company": "Supper Co.",
+      "title": "Communications Manager",
+      "start": "2025-02",
+      "end": null
+    },
+    {
+      "company": "Supper Co.",
+      "title": "Sr. Digital Marketing Specialist",
+      "start": "2024-04",
+      "end": "2025-02"
+    },
+    {
+      "company": "Hook Creative",
+      "title": "Creative Marketing Director",
+      "start": "2022-11",
+      "end": "2024-04",
+      "summary": "Guided a creative team executing brand design and marketing initiatives."
+    },
+    {
+      "company": "Hook Creative",
+      "title": "Lead Designer",
+      "start": "2021-11",
+      "end": "2022-11",
+      "summary": "Worked with a creative team on brand identities and design solutions for clients across industries."
+    },
+    {
+      "company": "Murney Associates, Realtors",
+      "title": "Marketing Director",
+      "start": "2021-03",
+      "end": "2021-11",
+      "summary": "Led a small team providing design services and marketing consultation to real estate agents. Managed online channels, supported agent training materials, taught digital and video marketing classes, and improved marketing processes and workflows."
+    },
+    {
+      "company": "Murney Associates, Realtors",
+      "title": "Marketing Coordinator",
+      "start": "2018-09",
+      "end": "2021-03",
+      "summary": "Provided full-time graphic design support for over 500 real estate agents, focusing on agent brand identities and marketing collateral."
+    },
+    {
+      "company": "Film Appeal",
+      "title": "Co-Founder",
+      "start": "2015-06",
+      "end": "2018-09",
+      "summary": "Co-founded a full-service video production company specializing in commercial video marketing. Oversaw all stages of production, with an emphasis on video editing and motion graphics."
+    }
+  ],
+  "education": [
+    {
+      "school": "Ozarks Technical Community College",
+      "field": "Electronic Media Production",
+      "start_year": 2014,
+      "end_year": 2016
+    }
+  ]
+}
