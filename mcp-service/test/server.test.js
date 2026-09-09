@@ -23,6 +23,9 @@ test('real MCP client initializes, lists and calls tools over HTTP', async () =>
     const { tools } = await client.listTools();
     assert.equal(tools.length, 4);
     assert.ok(tools.every(tool => tool.annotations.readOnlyHint));
+    assert.match(client.getInstructions(), /one to three short paragraphs/);
+    assert.match(tools.find(tool => tool.name === 'get_profile').description, /single tool/);
+    assert.match(tools.find(tool => tool.name === 'search_content').description, /specific published note/);
     const call = async (name, args = {}) => JSON.parse((await client.callTool({ name, arguments: args })).content[0].text);
     const profile = await call('get_profile');
     assert.equal(profile.name, 'Justin Martin');
@@ -30,6 +33,9 @@ test('real MCP client initializes, lists and calls tools over HTTP', async () =>
     assert.equal(profile.professional_background.experience.length, 8);
     assert.equal(profile.professional_background.experience.filter(role => role.end === null).length, 2);
     assert.equal(profile.professional_background.source.as_of, '2026-09-08');
+    assert.equal(profile.life_story.sections.length, 4);
+    assert.ok(profile.life_story.sections[0].paragraphs[0].includes('central California'));
+    assert.ok(profile.life_story.sections[3].fun_facts.includes('Justin and Kayla are avid LEGO collectors.'));
     assert.ok(!JSON.stringify(profile).includes('<span'));
     assert.ok((await call('search_content', { query: 'music' })).results.some(p => p.id === 'profile'));
     assert.deepEqual((await call('search_content', { query: 'draft-only-needle' })).results, []);
@@ -46,8 +52,10 @@ test('real MCP client initializes, lists and calls tools over HTTP', async () =>
     assert.equal(career.professional_background.education[0].field, 'Electronic Media Production');
     assert.equal(career.professional_background.education[0].degree, undefined);
     const search = await call('search_content', { query: 'Film Appeal' });
-    assert.equal(search.results[0].id, 'career');
-    assert.equal(search.results[0].source.as_of, '2026-09-08');
+    assert.ok(search.results.some(result => result.id === 'story'));
+    assert.ok(search.results.some(result => result.id === 'career'));
+    const story = await call('get_page', { id: 'story' });
+    assert.ok(story.text.includes('Shuffle Quest'));
     const invalid = await client.callTool({ name: 'search_content', arguments: { query: 'music', limit: 1000 } });
     assert.equal(invalid.isError, true);
   } finally { await client.close(); }
