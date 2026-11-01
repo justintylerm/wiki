@@ -61,23 +61,6 @@ inject('updated', `Last updated ${stamp}`);
 const escapeHtml = (s) => String(s == null ? '' : s)
     .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 
-// Feed likes use stable, URL-safe IDs. Notes keep their slug; updates are keyed
-// from their content so moving one within the feed doesn't reset its counter.
-const stableLikeHash = (value) => {
-    let hash = 2166136261;
-    for (const char of String(value || '')) {
-        hash ^= char.charCodeAt(0);
-        hash = Math.imul(hash, 16777619);
-    }
-    return (hash >>> 0).toString(36);
-};
-
-const renderLikeButton = (likeId, itemLabel) => `
-                    <button class="feed-like" type="button" data-like-id="${escapeHtml(likeId)}" aria-pressed="false" aria-label="Like this ${itemLabel}">
-                        <svg class="feed-like-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78L12 21.23l8.84-8.84a5.5 5.5 0 0 0 0-7.78Z"></path></svg>
-                        <span class="feed-like-count" aria-live="polite">0</span>
-                    </button>`;
-
 // Feed article blocks. Existing paragraph/list posts remain valid while newer
 // posts can mix headings, quotes, individual images, and multi-image galleries.
 const normalizeBlock = (b) => {
@@ -247,11 +230,10 @@ const renderStatusCard = (update) => {
     // The compact mobile accordion owns the unique observation-count id; the
     // feed uses a class so the live count can update in both places.
     const status = String(update.text).replace(/id=(['"])inat-count\1/g, 'class="inat-count"');
-    const likeId = `update-${update.id || stableLikeHash(update.text)}`;
     const media = renderPostMedia(update);
-    return `                <article class="feed-item feed-item--status" data-feed-id="${likeId}">
+    return `                <article class="feed-item feed-item--status">
                     <div class="feed-meta"><time>${escapeHtml(updateDate(update))}</time></div>
-                    <p class="feed-status">${status}</p>${media}${renderLikeButton(likeId, 'update')}
+                    <p class="feed-status">${status}</p>${media}
                 </article>`;
 };
 
@@ -275,11 +257,10 @@ const renderNoteCard = (post) => {
                             </div>
                         </div>
                     </div>` : '';
-    const likeId = `note-${post.slug}`;
-    return `                <article class="feed-item feed-item--post" id="post-${escapeHtml(post.slug)}" data-post-slug="${escapeHtml(post.slug)}" data-feed-id="${escapeHtml(likeId)}">
+    return `                <article class="feed-item feed-item--post" id="post-${escapeHtml(post.slug)}" data-post-slug="${escapeHtml(post.slug)}">
                     <div class="feed-meta"><time>${escapeHtml(updateDate(post))}</time></div>
                     <h2 class="feed-post-title">${escapeHtml(post.title || 'Untitled')}</h2>
-                    ${summary ? `<p class="feed-post-summary">${summary}</p>` : ''}${media}${expandable}${renderLikeButton(likeId, 'note')}
+                    ${summary ? `<p class="feed-post-summary">${summary}</p>` : ''}${media}${expandable}
                 </article>`;
 };
 

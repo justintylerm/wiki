@@ -115,17 +115,6 @@
         .feed-post-toggle:hover{color:#000}
         .feed-chevron{width:13px;height:13px;fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round;transition:transform .3s cubic-bezier(.22,1,.36,1)}
         .feed-post-toggle[aria-expanded="true"] .feed-chevron{transform:rotate(180deg)}
-        .feed-like{display:flex;align-items:center;gap:5px;width:max-content;height:24px;margin-top:22px;padding:0;border:0;border-radius:0;background:none;color:rgba(0,0,0,.38);box-shadow:none;font-family:inherit;font-size:14px;font-weight:400;line-height:1;letter-spacing:0;cursor:pointer;transition:color .18s ease,transform .18s ease}
-        .feed-like:hover{background:none;color:rgba(0,0,0,.68)}
-        .feed-like:active{transform:scale(.96)}
-        .feed-like[aria-pressed="true"]{background:none;color:#000}
-        .feed-like-icon{width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
-        .feed-like[aria-pressed="true"] .feed-like-icon{fill:currentColor}
-        .feed-like-count{min-width:1ch;text-align:left;font-variant-numeric:tabular-nums}
-        .feed-like.is-reacting .feed-like-icon{animation:like-heart-pop .28s cubic-bezier(.22,1,.36,1)}
-        .feed-like.is-reacting .feed-like-count{animation:like-count-roll .28s cubic-bezier(.22,1,.36,1)}
-        @keyframes like-heart-pop{0%{transform:scale(.72)}55%{transform:scale(1.16)}100%{transform:scale(1)}}
-        @keyframes like-count-roll{0%{transform:translateY(35%);opacity:.35}100%{transform:translateY(0);opacity:1}}
         .page-wrapper{display:flex;min-height:100vh}
         .photo-column{position:fixed;right:30px;bottom:30px;display:flex;flex-direction:column;align-items:flex-end;justify-content:flex-end;animation:photoFade .8s cubic-bezier(.22,1,.36,1) .05s both}
         .photo-main{width:330px;height:440px;object-fit:cover;object-position:center 20%;border-radius:10px;transition:opacity .3s ease}
