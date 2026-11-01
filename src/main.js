@@ -97,6 +97,46 @@ const nowPlaying = document.getElementById('now-playing');
         let feedReturnFocus = null;
         let feedHideTimer = null;
 
+        /* Feed videos carry no source until the feed is open and they scroll into view, then
+           autoplay muted with no controls. Closing the feed drops every source again so
+           nothing keeps buffering in the background. */
+        const feedVideos = Array.from(feedWindow ? feedWindow.querySelectorAll('video[data-src]') : []);
+        let feedVideoObserver = null;
+
+        function playFeedVideo(video) {
+            video.muted = true;
+            if (!video.getAttribute('src')) {
+                video.src = video.dataset.src;
+                video.load();
+            }
+            const playing = video.play();
+            if (playing && playing.catch) playing.catch(() => {});
+        }
+
+        function wakeFeedVideos() {
+            if (!feedVideos.length) return;
+            if (!feedVideoObserver) {
+                feedVideoObserver = new IntersectionObserver((entries) => {
+                    entries.forEach((entry) => {
+                        if (entry.isIntersecting) playFeedVideo(entry.target);
+                        else entry.target.pause();
+                    });
+                }, { root: feedScroll, rootMargin: '200px 0px' });
+            }
+            feedVideos.forEach((video) => feedVideoObserver.observe(video));
+        }
+
+        function sleepFeedVideos() {
+            if (feedVideoObserver) feedVideoObserver.disconnect();
+            feedVideos.forEach((video) => {
+                video.pause();
+                if (video.getAttribute('src')) {
+                    video.removeAttribute('src');
+                    video.load();
+                }
+            });
+        }
+
         function openFeed(trigger) {
             if (!feedWindow) return;
             if (window.uiSound) window.uiSound.play('pop');
@@ -108,6 +148,7 @@ const nowPlaying = document.getElementById('now-playing');
 
             feedWindow.hidden = false;
             if (feedScroll) feedScroll.scrollTop = 0;
+            wakeFeedVideos();
 
             requestAnimationFrame(() => feedWindow.classList.add('open'));
             document.addEventListener('keydown', onFeedKeydown);
@@ -117,6 +158,7 @@ const nowPlaying = document.getElementById('now-playing');
         function closeFeed() {
             if (!feedWindow || feedWindow.hidden) return;
             closeExpandedPosts(true);
+            sleepFeedVideos();
             if (window.uiSound) window.uiSound.play('slide');
             feedWindow.classList.remove('open');
             document.body.classList.remove('feed-open');

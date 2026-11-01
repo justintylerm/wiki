@@ -93,7 +93,7 @@ const renderPostMedia = (post) => {
     if (videoSrc) {
         return `
                     <figure class="feed-post-media">
-                        <video src="${escapeHtml(videoSrc)}" controls muted loop playsinline preload="metadata" aria-label="${escapeHtml(post.title || 'Post preview video')}"></video>
+                        <video class="feed-post-video" data-src="${escapeHtml(videoSrc)}" muted loop playsinline preload="none" aria-label="${escapeHtml(post.title || 'Post preview video')}"></video>
                     </figure>`;
     }
     const images = postImages(post);
