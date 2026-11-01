@@ -1,17 +1,5 @@
 [
   {
-    "id": "s-mvy7g4vs",
-    "type": "status",
-    "text": "Halloween 2026",
-    "createdAt": "2026-11-01T19:10:26.330Z",
-    "published": true,
-    "image": "assets/posts/s-mvy7g4vs-01.webp",
-    "images": [
-      "assets/posts/s-mvy7g4vs-01.webp",
-      "assets/posts/s-mvy7g4vs-02.webp"
-    ]
-  },
-  {
     "id": "s-mtjdi1kz",
     "type": "status",
     "text": "What if rearranging a markdown note was drag and drop?",
