@@ -76,6 +76,7 @@ export function makeContent(content, updates, html) {
     text: [plain(p.text), ...(p.body ?? []).map(blockText)].filter(Boolean).join('\n\n'),
     ...(p.video ? { video_url: new URL(p.video, site).href } : {}),
     ...(p.image ? { image_url: new URL(p.image, site).href } : {}),
+    ...(Array.isArray(p.images) && p.images.length ? { image_urls: p.images.map(image => new URL(image, site).href) } : {}),
   })).filter(p => p.id)];
   return { profile, contact, pages };
 }

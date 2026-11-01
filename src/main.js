@@ -200,6 +200,17 @@ const nowPlaying = document.getElementById('now-playing');
             });
         });
 
+        /* Photo galleries scroll natively; clicking the photo peeking at the edge snaps it into view. */
+        document.querySelectorAll('.feed-post-gallery-track').forEach((track) => {
+            track.addEventListener('click', (event) => {
+                const slide = event.target.closest('.feed-post-gallery-slide');
+                if (!slide) return;
+                const left = slide.getBoundingClientRect().left - track.getBoundingClientRect().left + track.scrollLeft;
+                if (Math.abs(left - track.scrollLeft) < 4) return;
+                track.scrollTo({ left, behavior: 'smooth' });
+            });
+        });
+
         /* Shared feed likes — public totals with one ordinary vote per browser. */
         const likeStorageKey = 'justinmartin-feed-likes-v1';
         const likeCountCacheKey = 'justinmartin-feed-like-counts-v1';

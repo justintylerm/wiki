@@ -97,14 +97,42 @@ const assetHref = (src) => {
     return /^(?:https?:|data:|\/)/i.test(value) ? value : `/${value}`;
 };
 
-const renderPreviewMedia = (post) => {
+// A post carries one WebM, or up to five photos. `images` lists every photo in
+// order; `image` stays as the first one so older readers keep working.
+const MAX_POST_IMAGES = 5;
+const postImages = (post) => {
+    const list = Array.isArray(post.images) && post.images.length ? post.images : (post.image ? [post.image] : []);
+    return list.map(assetHref).filter(Boolean).slice(0, MAX_POST_IMAGES);
+};
+
+const renderPostMedia = (post) => {
     const videoSrc = assetHref(post.video);
     if (videoSrc) {
-        return `<video src="${escapeHtml(videoSrc)}" controls muted loop playsinline preload="metadata" aria-label="${escapeHtml(post.title || 'Post preview video')}"></video>`;
+        return `
+                    <figure class="feed-post-media">
+                        <video src="${escapeHtml(videoSrc)}" controls muted loop playsinline preload="metadata" aria-label="${escapeHtml(post.title || 'Post preview video')}"></video>
+                    </figure>`;
     }
-    const imageSrc = assetHref(post.image);
-    if (!imageSrc) return '';
-    return `<img src="${escapeHtml(imageSrc)}" alt="${escapeHtml(post.imageAlt || post.title || '')}" loading="lazy" decoding="async">`;
+    const images = postImages(post);
+    if (!images.length) return '';
+    const alt = escapeHtml(post.imageAlt || post.title || '');
+    if (images.length === 1) {
+        return `
+                    <figure class="feed-post-media">
+                        <img src="${escapeHtml(images[0])}" alt="${alt}" loading="lazy" decoding="async">
+                    </figure>`;
+    }
+    // Several photos scroll sideways: one snapped into view, the next peeking in at the edge.
+    const slides = images.map((src, i) => {
+        const label = alt ? `${alt} (${i + 1} of ${images.length})` : `Photo ${i + 1} of ${images.length}`;
+        return `
+                            <figure class="feed-post-gallery-slide"><img src="${escapeHtml(src)}" alt="${label}" loading="lazy" decoding="async" draggable="false"></figure>`;
+    }).join('');
+    return `
+                    <div class="feed-post-gallery" role="group" aria-roledescription="carousel" aria-label="${images.length} photos">
+                        <div class="feed-post-gallery-track" tabindex="0">${slides}
+                        </div>
+                    </div>`;
 };
 
 const renderFeedBlock = (rawBlock) => {
@@ -220,11 +248,7 @@ const renderStatusCard = (update) => {
     // feed uses a class so the live count can update in both places.
     const status = String(update.text).replace(/id=(['"])inat-count\1/g, 'class="inat-count"');
     const likeId = `update-${update.id || stableLikeHash(update.text)}`;
-    const previewMedia = renderPreviewMedia(update);
-    const media = previewMedia ? `
-                    <figure class="feed-post-media">
-                        ${previewMedia}
-                    </figure>` : '';
+    const media = renderPostMedia(update);
     return `                <article class="feed-item feed-item--status" data-feed-id="${likeId}">
                     <div class="feed-meta"><time>${escapeHtml(updateDate(update))}</time></div>
                     <p class="feed-status">${status}</p>${media}${renderLikeButton(likeId, 'update')}
@@ -237,11 +261,7 @@ const renderNoteCard = (post) => {
     const summary = summaryIndex >= 0 ? blocks[summaryIndex].text : '';
     const expandedBlocks = blocks.filter((block, index) => index !== summaryIndex)
         .map(renderFeedBlock).filter(Boolean).join('\n                            ');
-    const previewMedia = renderPreviewMedia(post);
-    const media = previewMedia ? `
-                    <figure class="feed-post-media">
-                        ${previewMedia}
-                    </figure>` : '';
+    const media = renderPostMedia(post);
     const bodyId = `feed-post-body-${escapeHtml(post.slug)}`;
     const expandable = expandedBlocks ? `
                     <button class="feed-post-toggle" type="button" aria-expanded="false" aria-controls="${bodyId}">

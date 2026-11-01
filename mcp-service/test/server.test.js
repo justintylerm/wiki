@@ -85,6 +85,14 @@ test('upstream failure returns an MCP tool error', async () => {
   assert.equal((await response.json()).result.isError, true);
 });
 
+test('statuses with several photos expose every image URL', () => {
+  const images = ['assets/posts/s-multi-01.webp', 'assets/posts/s-multi-02.webp', 'assets/posts/s-multi-03.webp'];
+  const { pages } = makeContent(bio, [{ id: 's-multi', type: 'status', text: 'Three photos', published: true, image: images[0], images }], html);
+  const page = pages.find(item => item.id === 's-multi');
+  assert.equal(page.image_url, 'https://justinmartin.wiki/assets/posts/s-multi-01.webp');
+  assert.deepEqual(page.image_urls, images.map(image => 'https://justinmartin.wiki/' + image));
+});
+
 test('browser CORS preflight and invalid protocol requests', async () => {
   const worker = createWorker(async () => data);
   const preflight = await worker.fetch(new Request('https://mcp.test/mcp', { method: 'OPTIONS' }));
