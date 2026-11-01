@@ -1,5 +1,13 @@
 [
   {
+    "id": "s-mvy80uq5",
+    "type": "status",
+    "text": "Halloween 2026",
+    "createdAt": "2026-11-01T19:26:31.976Z",
+    "published": true,
+    "video": "assets/posts/s-mvy80uq5.webm"
+  },
+  {
     "id": "s-mtjdi1kz",
     "type": "status",
     "text": "What if rearranging a markdown note was drag and drop?",
