@@ -205,7 +205,8 @@ const nowPlaying = document.getElementById('now-playing');
             track.addEventListener('click', (event) => {
                 const slide = event.target.closest('.feed-post-gallery-slide');
                 if (!slide) return;
-                const left = slide.getBoundingClientRect().left - track.getBoundingClientRect().left + track.scrollLeft;
+                const inset = parseFloat(getComputedStyle(track).paddingLeft) || 0;
+                const left = slide.getBoundingClientRect().left - track.getBoundingClientRect().left + track.scrollLeft - inset;
                 if (Math.abs(left - track.scrollLeft) < 4) return;
                 track.scrollTo({ left, behavior: 'smooth' });
             });

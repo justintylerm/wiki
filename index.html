@@ -89,9 +89,9 @@
         .feed-post-media{overflow:hidden;background:#e8e8e4;border-radius:10px}
         .feed-item--status .feed-post-media{margin-top:24px}
         .feed-post-media img,.feed-post-media video{display:block;width:100%;aspect-ratio:4/3;object-fit:cover;border-radius:inherit}
-        .feed-post-gallery{margin-right:-48px}
+        .feed-post-gallery{margin-left:-48px;margin-right:-48px}
         .feed-item--status .feed-post-gallery{margin-top:24px}
-        .feed-post-gallery-track{display:flex;gap:10px;padding-right:48px;overflow-x:auto;overscroll-behavior-x:contain;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;scrollbar-width:none;outline:none}
+        .feed-post-gallery-track{display:flex;gap:10px;padding:0 48px;scroll-padding-left:48px;overflow-x:auto;overscroll-behavior-x:contain;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;scrollbar-width:none;outline:none}
         .feed-post-gallery-track::-webkit-scrollbar{display:none}
         .feed-post-gallery-track:focus-visible{outline:1px solid rgba(0,0,0,.3);outline-offset:4px;border-radius:10px}
         .feed-post-gallery-slide{flex:0 0 calc(100% - 36px);min-width:0;margin:0;overflow:hidden;background:#e8e8e4;border-radius:10px;scroll-snap-align:start;scroll-snap-stop:always}
@@ -161,8 +161,8 @@
             .feed-post-title{font-size:30px}
             .feed-article-gallery{grid-template-columns:1fr}
             .feed-article-gallery figure{grid-column:1}
-            .feed-post-gallery{margin-right:-24px}
-            .feed-post-gallery-track{padding-right:24px}
+            .feed-post-gallery{margin-left:-24px;margin-right:-24px}
+            .feed-post-gallery-track{padding:0 24px;scroll-padding-left:24px}
         }
     </style>
 
