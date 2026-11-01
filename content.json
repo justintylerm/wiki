@@ -27,14 +27,13 @@
     }
   ],
   "setup": [
-    "Obsidian",
-    "Superwhisper",
+    "CleanShot X",
     "Alfred",
     "Figma",
-    "CleanShot X",
+    "Superwhisper",
     "Claude",
     "Codex"
   ],
   "photoCaption": "Ollie and I, 2025",
-  "lastUpdated": "07-28-26"
+  "lastUpdated": "11-01-26"
 }
