@@ -73,6 +73,7 @@
         .toggle-row{display:flex;align-items:center;gap:9px}
         .toggle-row input{width:auto;margin:0}
         .toggle-row label{font-size:14px;color:var(--body);cursor:pointer}
+        #mediaSource{margin-bottom:12px}
         input[type=file]{display:none}
         /* body block editor */
         .add-row{display:flex;flex-wrap:wrap;gap:8px}
@@ -193,11 +194,21 @@
         </section>
 
         <section>
-            <div class="label"><span>Photos</span><span class="hint" id="mediaHint">up to 5 photos, or one WebM</span></div>
-            <div class="media-list" id="mediaList"></div>
-            <div class="img-actions">
-                <button type="button" class="file-btn" id="imgPick">Add photos or WebM&hellip;</button>
-                <input type="file" id="imgFile" accept="image/*,video/webm,.webm" multiple>
+            <div class="label"><span>Media</span><span class="hint" id="mediaHint">up to 5 photos, or one WebM</span></div>
+            <div class="toggle-row status-only hidden" id="mediaSource" role="radiogroup" aria-label="Status media">
+                <input type="radio" name="mediaSource" id="mediaUpload" checked><label for="mediaUpload">Photos or WebM</label>
+                <input type="radio" name="mediaSource" id="mediaYouTube"><label for="mediaYouTube">YouTube link</label>
+            </div>
+            <div id="uploadFields">
+                <div class="media-list" id="mediaList"></div>
+                <div class="img-actions">
+                    <button type="button" class="file-btn" id="imgPick">Add photos or WebM&hellip;</button>
+                    <input type="file" id="imgFile" accept="image/*,video/webm,.webm" multiple>
+                </div>
+            </div>
+            <div id="youtubeFields" class="hidden">
+                <label class="label" for="youtubeUrl">YouTube video URL</label>
+                <input type="url" id="youtubeUrl" placeholder="https://www.youtube.com/watch?v=…" spellcheck="false">
             </div>
         </section>
 
@@ -235,6 +246,7 @@
     </div>
 </div>
 
+<script src="../src/youtube.js"></script>
 <script>
 (function () {
     const OWNER = 'justintylerm', REPO = 'wiki', BRANCH = 'main', FILE = 'content.json';
@@ -257,8 +269,7 @@
     let mode = 'home';        // 'home' | 'updates' | 'editor'
     let editingIndex = -1;    // index of the update being edited, -1 = new
     let editingType = 'status';
-    // Preview media, in display order. A status carries up to MAX_PHOTOS photos (they
-    // scroll sideways on the site) or one WebM; a note keeps a single preview item.
+    // Uploaded media in display order. YouTube links are stored separately from uploads.
     // { kind: 'image' | 'video', path?: existing repo path, upload?: { base64, ext }, previewUrl }
     const MAX_PHOTOS = 5;
     let mediaItems = [];
@@ -618,6 +629,13 @@
     function renderMedia() {
         const list = $('mediaList');
         list.innerHTML = '';
+        const useYouTube = editingType === 'status' && $('mediaYouTube').checked;
+        $('youtubeFields').classList.toggle('hidden', !useYouTube);
+        $('uploadFields').classList.toggle('hidden', useYouTube);
+        if (useYouTube) {
+            $('mediaHint').textContent = 'optional · plays when a visitor presses play';
+            return;
+        }
         const limit = mediaLimit();
         mediaItems.forEach((item, index) => {
             const wrap = document.createElement('div');
@@ -726,6 +744,10 @@
         document.querySelectorAll('.status-only').forEach((el) => el.classList.toggle('hidden', !isStatus));
         document.querySelectorAll('.note-only').forEach((el) => el.classList.toggle('hidden', isStatus));
         $('statusText').value = isStatus && post ? (post.text || '') : '';
+        $('youtubeUrl').value = isStatus && post ? (post.youtubeUrl || '') : '';
+        $('youtubeUrl').removeAttribute('aria-invalid');
+        $('mediaYouTube').checked = !!$('youtubeUrl').value;
+        $('mediaUpload').checked = !$('mediaYouTube').checked;
         autosize($('statusText'));
         $('postTitle').value = !isStatus && post ? (post.title || '') : '';
         $('postSlug').value = !isStatus && post ? (post.slug || '') : '';
@@ -1087,16 +1109,39 @@
         };
     }
 
+    async function fetchYouTubeTitle(watchUrl) {
+        const params = new URLSearchParams({ url: watchUrl, format: 'json' });
+        try {
+            const response = await fetch('https://www.youtube.com/oembed?' + params, {
+                signal: AbortSignal.timeout(4000)
+            });
+            if (!response.ok) return '';
+            const data = await response.json();
+            return typeof data.title === 'string' ? data.title.trim() : '';
+        } catch {
+            // The feed uses the status text until a later save can retrieve the title.
+            return '';
+        }
+    }
+
     async function publishUpdate() {
         const existing = editingIndex >= 0 ? updates[editingIndex] : null;
         if (editingType === 'status') {
             const text = $('statusText').value.trim();
             if (!text) { setStatus('Write the status first', 'err'); return; }
+            const useYouTube = $('mediaYouTube').checked;
+            const link = useYouTube ? $('youtubeUrl').value.trim() : '';
+            const videoId = link && youtubeVideoId(link);
+            if (link && !videoId) {
+                $('youtubeUrl').setAttribute('aria-invalid', 'true');
+                $('youtubeUrl').focus();
+                setStatus('Enter a YouTube video link, such as a watch or share URL', 'err');
+                return;
+            }
             publishBtn.disabled = true;
             setStatus('Publishing…');
             try {
                 const statusId = (existing && existing.id) || ('s-' + Date.now().toString(36));
-                const { video, images } = await preparePreviewMedia(statusId);
                 const statusUpdate = {
                     id: statusId,
                     type: 'status',
@@ -1104,10 +1149,19 @@
                     createdAt: (existing && existing.createdAt) || new Date().toISOString(),
                     published: $('postPublished').checked
                 };
-                if (video) statusUpdate.video = video;
-                else if (images.length) {
-                    statusUpdate.image = images[0];
-                    if (images.length > 1) statusUpdate.images = images;
+                if (videoId) {
+                    statusUpdate.youtubeUrl = 'https://www.youtube.com/watch?v=' + videoId;
+                    const sameVideo = existing && youtubeVideoId(existing.youtubeUrl) === videoId;
+                    const savedTitle = sameVideo && typeof existing.youtubeTitle === 'string' && existing.youtubeTitle.trim();
+                    const title = savedTitle || await fetchYouTubeTitle(statusUpdate.youtubeUrl);
+                    if (title) statusUpdate.youtubeTitle = title;
+                } else if (!useYouTube) {
+                    const { video, images } = await preparePreviewMedia(statusId);
+                    if (video) statusUpdate.video = video;
+                    else if (images.length) {
+                        statusUpdate.image = images[0];
+                        if (images.length > 1) statusUpdate.images = images;
+                    }
                 }
                 const next = updates.slice();
                 if (editingIndex >= 0) next[editingIndex] = statusUpdate; else next.push(statusUpdate);
@@ -1182,6 +1236,11 @@
         slugTouched = true; markDirty();
     });
     $('statusText').addEventListener('input', () => { autosize($('statusText')); markDirty(); });
+    $('mediaSource').addEventListener('change', () => { renderMedia(); markDirty(); });
+    $('youtubeUrl').addEventListener('input', () => {
+        $('youtubeUrl').removeAttribute('aria-invalid');
+        markDirty();
+    });
     $('statusLink').addEventListener('click', () => insertLink($('statusText')));
     $('postPublished').addEventListener('change', markDirty);
     $('imgPick').addEventListener('click', () => $('imgFile').click());

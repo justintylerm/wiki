@@ -89,6 +89,27 @@
         .feed-post-media{overflow:hidden;background:#e8e8e4;border-radius:10px}
         .feed-item--status .feed-post-media{margin-top:24px}
         .feed-post-media img,.feed-post-media video{display:block;width:100%;aspect-ratio:4/3;object-fit:cover;border-radius:inherit}
+        .feed-youtube{position:relative;width:100%;aspect-ratio:4/3;background:#111;color:white}
+        .youtube-poster,.feed-youtube iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
+        .feed-youtube .youtube-poster img{height:100%;object-fit:contain}
+        .youtube-poster::after{content:"";position:absolute;inset:0;pointer-events:none;background:linear-gradient(180deg,rgba(0,0,0,.72),transparent 32%,transparent 66%,rgba(0,0,0,.72))}
+        .youtube-title,.feed-youtube button{position:absolute;z-index:1;color:white}
+        .youtube-title{top:16px;left:16px;right:16px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;overflow-wrap:anywhere;font-size:16px;line-height:1.35;text-decoration:none;text-shadow:0 1px 4px #000}
+        .youtube-title:hover{text-decoration:underline}
+        .feed-youtube button{display:grid;place-items:center;border:0;cursor:pointer;background:transparent}
+        .feed-youtube :focus-visible{outline:2px solid white;outline-offset:2px}
+        .feed-youtube button svg{width:22px;height:22px}
+        .feed-youtube .youtube-play{top:50%;left:50%;width:66px;height:46px;transform:translate(-50%,-50%);border-radius:13px;background:#e00}
+        .feed-youtube .youtube-play:hover{background:#c00}
+        .youtube-mute,.youtube-fullscreen{bottom:4px;width:44px;height:44px}
+        .youtube-mute{left:4px}
+        .youtube-fullscreen{right:4px}
+        .youtube-fullscreen[aria-pressed="false"] .collapse-icon,.youtube-fullscreen[aria-pressed="true"] .expand-icon{display:none}
+        .youtube-mute[aria-pressed="false"] .sound-off,.youtube-mute[aria-pressed="true"] .sound-on,.feed-youtube.is-playing .youtube-fullscreen{display:none}
+        .feed-youtube:fullscreen{width:100%;height:100%;border-radius:0;background:black}
+        .feed-item--status .feed-youtube.youtube-expanded{position:fixed;inset:0;z-index:2;width:100%;height:100%;margin:0;border-radius:0;background:black}
+        .feed-youtube:fullscreen.is-playing iframe,.youtube-expanded.is-playing iframe{height:calc(100% - 48px)}
+        .feed-youtube:fullscreen.is-playing .youtube-fullscreen,.youtube-expanded.is-playing .youtube-fullscreen{display:grid}
         .feed-post-gallery{margin-left:-48px;margin-right:-48px}
         .feed-item--status .feed-post-gallery{margin-top:24px}
         .feed-post-gallery-track{display:flex;gap:10px;padding:0 48px;scroll-padding-left:48px;overflow-x:auto;overscroll-behavior-x:contain;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;scrollbar-width:none;outline:none}
@@ -312,7 +333,7 @@
     </section>
 
     <script src="/src/sounds.js" defer></script>
-    <script src="src/main.js?v=20260805-10" defer></script>
+    <script src="src/main.js?v=20261122" defer></script>
     <script>
         // Defer analytics until after load + idle to keep the main thread clear for LCP/TBT.
         (function(){

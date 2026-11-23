@@ -97,11 +97,52 @@ const nowPlaying = document.getElementById('now-playing');
         let feedReturnFocus = null;
         let feedHideTimer = null;
 
-        /* Feed videos carry no source until the feed is open and they scroll into view, then
+        /* WebM previews carry no source until the feed is open and they scroll into view, then
            autoplay muted with no controls. Closing the feed drops every source again so
            nothing keeps buffering in the background. */
         const feedVideos = Array.from(feedWindow ? feedWindow.querySelectorAll('video[data-src]') : []);
         let feedVideoObserver = null;
+
+        const youtubeCards = feedWindow ? feedWindow.querySelectorAll('.feed-youtube') : [];
+        youtubeCards.forEach((card) => {
+            const poster = card.querySelector('.youtube-poster');
+            const mute = card.querySelector('.youtube-mute');
+            const fullscreen = card.querySelector('.youtube-fullscreen');
+            mute.addEventListener('click', () => {
+                const muted = mute.getAttribute('aria-pressed') === 'false';
+                mute.setAttribute('aria-pressed', String(muted));
+                mute.title = muted ? 'Unmute' : 'Mute';
+            });
+            const updateFullscreen = () => {
+                const expanded = document.fullscreenElement === card || card.classList.contains('youtube-expanded');
+                fullscreen.setAttribute('aria-pressed', String(expanded));
+                fullscreen.title = expanded ? 'Exit fullscreen' : 'Fullscreen';
+            };
+            fullscreen.addEventListener('click', async () => {
+                if (document.fullscreenElement === card) await document.exitFullscreen();
+                else if (card.classList.contains('youtube-expanded')) card.classList.remove('youtube-expanded');
+                else {
+                    try { await card.requestFullscreen(); }
+                    catch { card.classList.add('youtube-expanded'); }
+                }
+                updateFullscreen();
+            });
+            card.addEventListener('fullscreenchange', updateFullscreen);
+            card.querySelector('.youtube-play').addEventListener('click', () => {
+                const player = document.createElement('iframe');
+                player.title = card.querySelector('.youtube-title').textContent;
+                player.allow = 'autoplay; encrypted-media; fullscreen; picture-in-picture';
+                player.allowFullscreen = true;
+                player.referrerPolicy = 'strict-origin-when-cross-origin';
+                const muted = mute.getAttribute('aria-pressed') === 'true' ? '1' : '0';
+                player.src = 'https://www.youtube-nocookie.com/embed/' + card.dataset.youtubeId
+                    + '?autoplay=1&controls=1&playsinline=1&mute=' + muted;
+                poster.hidden = true;
+                card.classList.add('is-playing');
+                card.appendChild(player);
+                player.focus();
+            });
+        });
 
         function playFeedVideo(video) {
             video.muted = true;
@@ -127,6 +168,16 @@ const nowPlaying = document.getElementById('now-playing');
         }
 
         function sleepFeedVideos() {
+            if (document.fullscreenElement && feedWindow.contains(document.fullscreenElement)) {
+                document.exitFullscreen().catch(() => {});
+            }
+            youtubeCards.forEach((card) => {
+                card.querySelector('iframe')?.remove();
+                card.querySelector('.youtube-poster').hidden = false;
+                card.classList.remove('is-playing', 'youtube-expanded');
+                card.querySelector('.youtube-fullscreen').setAttribute('aria-pressed', 'false');
+                card.querySelector('.youtube-fullscreen').title = 'Fullscreen';
+            });
             if (feedVideoObserver) feedVideoObserver.disconnect();
             feedVideos.forEach((video) => {
                 video.pause();
@@ -179,6 +230,9 @@ const nowPlaying = document.getElementById('now-playing');
 
         function onFeedKeydown(e) {
             if (e.key !== 'Escape') return;
+            if (document.fullscreenElement) return;
+            const fullscreen = feedWindow.querySelector('.youtube-expanded .youtube-fullscreen');
+            if (fullscreen) { fullscreen.click(); return; }
             const expanded = feedWindow.querySelector('.feed-item--post.is-expanded');
             if (expanded) setPostExpanded(expanded, false, { updateUrl: true });
             else closeFeed();

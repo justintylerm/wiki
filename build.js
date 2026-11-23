@@ -8,6 +8,7 @@
  */
 const fs = require('fs');
 const path = require('path');
+const { youtubeVideoId } = require('./src/youtube.js');
 
 const root = __dirname;
 const content = JSON.parse(fs.readFileSync(path.join(root, 'content.json'), 'utf8'));
@@ -80,7 +81,7 @@ const assetHref = (src) => {
     return /^(?:https?:|data:|\/)/i.test(value) ? value : `/${value}`;
 };
 
-// A post carries one WebM, or up to five photos. `images` lists every photo in
+// A status can embed YouTube in place of one WebM or up to five photos. `images` lists every photo in
 // order; `image` stays as the first one so older readers keep working.
 const MAX_POST_IMAGES = 5;
 const postImages = (post) => {
@@ -89,6 +90,25 @@ const postImages = (post) => {
 };
 
 const renderPostMedia = (post) => {
+    const youtubeId = post.type === 'status' && youtubeVideoId(post.youtubeUrl);
+    if (youtubeId) {
+        const statusText = String(post.text || '').replace(/<[^>]*>/g, '').trim();
+        const title = escapeHtml(post.youtubeTitle || statusText || 'YouTube video');
+        return `
+                    <figure class="feed-post-media feed-youtube" data-youtube-id="${youtubeId}">
+                        <div class="youtube-poster">
+                            <img src="https://i.ytimg.com/vi/${youtubeId}/hqdefault.jpg" alt="" loading="lazy" decoding="async">
+                            <a class="youtube-title" href="https://www.youtube.com/watch?v=${youtubeId}" target="_blank" rel="noopener noreferrer" title="${title}">${title}</a>
+                            <button class="youtube-play" type="button" aria-label="Play ${title}"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M7 3v18l15-9z"/></svg></button>
+                            <button class="youtube-mute" type="button" aria-label="Mute video" aria-pressed="false" title="Mute">
+                                <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M3 9h4l5-4v14l-5-4H3z"/><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path class="sound-on" d="M15 8.5a5 5 0 0 1 0 7M18 5.5a9 9 0 0 1 0 13"/><path class="sound-off" d="m16 9 5 6m0-6-5 6"/></g></svg>
+                            </button>
+                        </div>
+                        <button class="youtube-fullscreen" type="button" aria-label="Fullscreen" aria-pressed="false" title="Fullscreen">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path class="expand-icon" d="M3 9V4h6m6 0h6v5m0 6v5h-6m-6 0H3v-5"/><path class="collapse-icon" d="M9 3v6H3m12-6v6h6m-6 12v-6h6M9 21v-6H3"/></svg>
+                        </button>
+                    </figure>`;
+    }
     const videoSrc = assetHref(post.video);
     if (videoSrc) {
         return `
