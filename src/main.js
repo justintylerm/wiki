@@ -108,6 +108,10 @@ const nowPlaying = document.getElementById('now-playing');
             const poster = card.querySelector('.youtube-poster');
             const mute = card.querySelector('.youtube-mute');
             const fullscreen = card.querySelector('.youtube-fullscreen');
+            card.addEventListener('pointerleave', (event) => {
+                if (event.pointerType === 'mouse' && !poster.hidden) card.classList.add('preview-idle');
+            });
+            card.addEventListener('pointerenter', () => card.classList.remove('preview-idle'));
             mute.addEventListener('click', () => {
                 const muted = mute.getAttribute('aria-pressed') === 'false';
                 mute.setAttribute('aria-pressed', String(muted));
@@ -174,7 +178,7 @@ const nowPlaying = document.getElementById('now-playing');
             youtubeCards.forEach((card) => {
                 card.querySelector('iframe')?.remove();
                 card.querySelector('.youtube-poster').hidden = false;
-                card.classList.remove('is-playing', 'youtube-expanded');
+                card.classList.remove('is-playing', 'youtube-expanded', 'preview-idle');
                 card.querySelector('.youtube-fullscreen').setAttribute('aria-pressed', 'false');
                 card.querySelector('.youtube-fullscreen').title = 'Fullscreen';
             });

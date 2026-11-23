@@ -178,8 +178,8 @@
         <div class="editor-type" id="editorType"></div>
 
         <section class="status-only hidden">
-            <div class="label"><span>Status</span><span class="hint">select text, then 🔗 to add a link</span></div>
-            <textarea id="statusText" rows="4" placeholder="What's on your mind?"></textarea>
+            <div class="label"><label for="statusText">Status</label><span id="statusTextHint" class="hint">optional with a YouTube video</span></div>
+            <textarea id="statusText" rows="4" aria-describedby="statusTextHint" placeholder="What's on your mind?"></textarea>
             <button type="button" class="link-btn" id="statusLink">Add link to selected text</button>
         </section>
 
@@ -532,6 +532,12 @@
         return (el.textContent || '').replace(/\s+/g, ' ').trim();
     };
 
+    const updateLabel = (update) => {
+        if (update.type !== 'status') return (update.title || '').trim() || 'Untitled note';
+        const videoLabel = update.youtubeUrl && (update.youtubeTitle || 'YouTube video');
+        return stripHtml(update.text) || videoLabel || 'Empty status';
+    };
+
     const updateTime = (update) => {
         const parsed = Date.parse(update && update.createdAt ? update.createdAt : '');
         if (Number.isFinite(parsed)) return parsed;
@@ -571,7 +577,7 @@
             kind.textContent = isStatus ? 'Status' : 'Note';
             const title = document.createElement('span');
             title.className = 'update-row-title';
-            title.textContent = isStatus ? (stripHtml(update.text) || 'Empty status') : ((update.title || '').trim() || 'Untitled note');
+            title.textContent = updateLabel(update);
             const meta = document.createElement('span');
             meta.className = 'update-row-meta';
             meta.textContent = displayDate(update) + (update.published ? '' : ' · draft');
@@ -776,8 +782,7 @@
         $('postDelete').style.display = post ? '' : 'none';
         dirty = false;
         publishBtn.disabled = true;
-        const label = isStatus ? stripHtml(post && post.text) : ((post && post.title) || '');
-        setStatus(post ? ('Editing “' + (label || (isStatus ? 'Empty status' : 'Untitled note')) + '”') : ('New ' + (isStatus ? 'status' : 'note')));
+        setStatus(post ? ('Editing “' + updateLabel(post) + '”') : ('New ' + (isStatus ? 'status' : 'note')));
     }
 
     // Body is a list of structured content blocks. Legacy strings remain paragraphs.
@@ -1128,7 +1133,6 @@
         const existing = editingIndex >= 0 ? updates[editingIndex] : null;
         if (editingType === 'status') {
             const text = $('statusText').value.trim();
-            if (!text) { setStatus('Write the status first', 'err'); return; }
             const useYouTube = $('mediaYouTube').checked;
             const link = useYouTube ? $('youtubeUrl').value.trim() : '';
             const videoId = link && youtubeVideoId(link);
@@ -1136,6 +1140,11 @@
                 $('youtubeUrl').setAttribute('aria-invalid', 'true');
                 $('youtubeUrl').focus();
                 setStatus('Enter a YouTube video link, such as a watch or share URL', 'err');
+                return;
+            }
+            if (!text && !videoId) {
+                setStatus('Write a status or add a YouTube video link', 'err');
+                $(useYouTube ? 'youtubeUrl' : 'statusText').focus();
                 return;
             }
             publishBtn.disabled = true;
@@ -1279,8 +1288,7 @@
     $('postDelete').addEventListener('click', async () => {
         if (editingIndex < 0) return;
         const p = updates[editingIndex];
-        const label = p.type === 'status' ? stripHtml(p.text) : ((p.title || '').trim() || 'Untitled note');
-        if (!confirm('Delete “' + (label || 'Empty status') + '”? It comes down on the next deploy.')) return;
+        if (!confirm('Delete “' + updateLabel(p) + '”? It comes down on the next deploy.')) return;
         publishBtn.disabled = true;
         setStatus('Deleting…');
         try {

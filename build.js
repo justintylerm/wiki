@@ -216,7 +216,7 @@ const publishedUpdates = updates
     .filter((update) => update && update.published && (update.type === 'status' || update.type === 'note'))
     .sort((a, b) => updateTimestamp(b) - updateTimestamp(a));
 const publishedPosts = publishedUpdates.filter((update) => update.type === 'note' && update.slug);
-const publishedStatuses = publishedUpdates.filter((update) => update.type === 'status' && update.text);
+const publishedStatuses = publishedUpdates.filter((update) => update.type === 'status' && String(update.text || '').trim());
 
 // The compact mobile accordion shows the newest lean statuses. Desktop opens the
 // full mixed feed instead.
@@ -249,11 +249,11 @@ ${postRows}
 const renderStatusCard = (update) => {
     // The compact mobile accordion owns the unique observation-count id; the
     // feed uses a class so the live count can update in both places.
-    const status = String(update.text).replace(/id=(['"])inat-count\1/g, 'class="inat-count"');
+    const status = String(update.text || '').trim().replace(/id=(['"])inat-count\1/g, 'class="inat-count"');
     const media = renderPostMedia(update);
     return `                <article class="feed-item feed-item--status">
                     <div class="feed-meta"><time>${escapeHtml(updateDate(update))}</time></div>
-                    <p class="feed-status">${status}</p>${media}
+                    ${status ? `<p class="feed-status">${status}</p>` : ''}${media}
                 </article>`;
 };
 

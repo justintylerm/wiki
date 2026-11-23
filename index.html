@@ -87,7 +87,7 @@
         .feed-post-title{font-size:34px;font-weight:400;line-height:1.15em;letter-spacing:-.032em;margin-bottom:14px}
         .feed-post-summary{max-width:54ch;color:var(--text-body);font-size:15px;line-height:1.48em;letter-spacing:-.014em;margin-bottom:24px}
         .feed-post-media{overflow:hidden;background:#e8e8e4;border-radius:10px}
-        .feed-item--status .feed-post-media{margin-top:24px}
+        .feed-status + .feed-post-media{margin-top:24px}
         .feed-post-media img,.feed-post-media video{display:block;width:100%;aspect-ratio:4/3;object-fit:cover;border-radius:inherit}
         .feed-youtube{position:relative;width:100%;aspect-ratio:4/3;background:#111;color:white}
         .youtube-poster,.feed-youtube iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
@@ -101,6 +101,13 @@
         .feed-youtube button svg{width:22px;height:22px}
         .feed-youtube .youtube-play{top:50%;left:50%;width:66px;height:46px;transform:translate(-50%,-50%);border-radius:13px;background:#e00}
         .feed-youtube .youtube-play:hover{background:#c00}
+        @media (any-hover:hover){
+            .feed-youtube.preview-idle:not(.is-playing):not(:has(:focus-visible)) :is(.youtube-title,button),
+            .feed-youtube.preview-idle:not(.is-playing):not(:has(:focus-visible)) .youtube-poster::after{opacity:0;transition:opacity var(--preview-fade,100ms) ease-out}
+        }
+        @media (prefers-reduced-motion:reduce){
+            .feed-youtube{--preview-fade:0s}
+        }
         .youtube-mute,.youtube-fullscreen{bottom:4px;width:44px;height:44px}
         .youtube-mute{left:4px}
         .youtube-fullscreen{right:4px}
@@ -333,7 +340,7 @@
     </section>
 
     <script src="/src/sounds.js" defer></script>
-    <script src="src/main.js?v=20261122" defer></script>
+    <script src="src/main.js?v=20261122-2" defer></script>
     <script>
         // Defer analytics until after load + idle to keep the main thread clear for LCP/TBT.
         (function(){
