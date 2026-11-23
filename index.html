@@ -89,7 +89,8 @@
         .feed-post-media{overflow:hidden;background:#e8e8e4;border-radius:10px}
         .feed-status + .feed-post-media{margin-top:24px}
         .feed-post-media img,.feed-post-media video{display:block;width:100%;aspect-ratio:4/3;object-fit:cover;border-radius:inherit}
-        .feed-youtube{display:block;width:100%;aspect-ratio:4/3;border:0;border-radius:inherit;background:#000}
+        /* A fractionally taller viewport lets YouTube's own preview fill the edges. */
+        .feed-youtube{display:block;width:100%;zoom:1.006;aspect-ratio:4 / 3.018;border:0;border-radius:inherit;background:#000}
         .feed-post-gallery{margin-left:-48px;margin-right:-48px}
         .feed-item--status .feed-post-gallery{margin-top:24px}
         .feed-post-gallery-track{display:flex;gap:10px;padding:0 48px;scroll-padding-left:48px;overflow-x:auto;overscroll-behavior-x:contain;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;scrollbar-width:none;outline:none}
