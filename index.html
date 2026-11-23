@@ -89,46 +89,7 @@
         .feed-post-media{overflow:hidden;background:#e8e8e4;border-radius:10px}
         .feed-status + .feed-post-media{margin-top:24px}
         .feed-post-media img,.feed-post-media video{display:block;width:100%;aspect-ratio:4/3;object-fit:cover;border-radius:inherit}
-        .feed-youtube{position:relative;width:100%;aspect-ratio:4/3;background:#111;color:white}
-        .youtube-poster,.feed-youtube iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
-        .feed-youtube .youtube-poster img{height:100%;object-fit:contain}
-        .youtube-poster::after{content:"";position:absolute;inset:0;pointer-events:none;background:linear-gradient(180deg,rgba(0,0,0,.72),transparent 32%,transparent 66%,rgba(0,0,0,.72))}
-        .youtube-title,.youtube-poster button,.youtube-fullscreen{position:absolute;z-index:1;color:white}
-        .youtube-title{top:16px;left:16px;right:16px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;overflow-wrap:anywhere;font-size:16px;line-height:1.35;text-decoration:none;text-shadow:0 1px 4px #000}
-        .youtube-title:hover{text-decoration:underline}
-        .feed-youtube button{display:grid;place-items:center;border:0;cursor:pointer;background:transparent}
-        .feed-youtube :focus-visible{outline:2px solid white;outline-offset:2px}
-        .feed-youtube button svg{width:22px;height:22px}
-        .feed-youtube .youtube-play{top:50%;left:50%;width:66px;height:46px;transform:translate(-50%,-50%);border-radius:13px;background:#e00}
-        .feed-youtube .youtube-play:hover{background:#c00}
-        .youtube-mute,.youtube-fullscreen{bottom:4px;width:44px;height:44px}
-        .youtube-mute{left:4px}
-        .youtube-fullscreen{right:4px}
-        .feed-youtube [aria-pressed="false"] :is(.collapse-icon,.sound-off),.feed-youtube [aria-pressed="true"] :is(.expand-icon,.sound-on){display:none}
-        .feed-youtube.is-playing{overflow:visible}
-        .feed-youtube.is-playing iframe{border-radius:inherit}
-        .feed-youtube.is-playing .youtube-fullscreen{display:none}
-        /* Use the space below the picture so the toolbar never covers or resizes the video on hover. */
-        .youtube-toolbar{display:none;position:absolute;inset:100% 0 auto;height:42px;align-items:center;gap:2px;color:var(--text-body);background:var(--bg)}
-        .feed-youtube.is-playing:not(.use-native) .youtube-toolbar{display:flex}
-        .youtube-toolbar button{width:36px;height:100%;flex:none;border-radius:4px;color:inherit}
-        .youtube-toolbar button:hover{color:var(--text);background:rgba(128,128,128,.1)}
-        .youtube-toolbar button svg{width:17px;height:17px}
-        .youtube-toolbar :focus-visible{outline-color:currentColor;outline-offset:-3px}
-        .youtube-toggle:not([data-action="play"]) .play-icon,.youtube-toggle:not([data-action="pause"]) .pause-icon,.youtube-toggle:not([data-action="replay"]) .replay-icon{display:none}
-        .youtube-seek{flex:1;min-width:0;height:22px;accent-color:currentColor;cursor:pointer}
-        .youtube-time{padding:0 4px;font-size:11px;font-variant-numeric:tabular-nums;white-space:nowrap}
-        @media (any-hover:hover){
-            .feed-youtube.is-running.mouse-outside .youtube-toolbar:not(:has(:focus-visible)){opacity:0}
-            /* Route the first returning pointer event to the card, which immediately re-enables the iframe. */
-            .feed-youtube.is-running.mouse-outside:not(.use-native) > iframe{pointer-events:none}
-        }
-        .feed-youtube:fullscreen{width:100%;height:100%;border-radius:0;background:black}
-        .feed-item--status .feed-youtube.youtube-expanded{position:fixed;inset:0;z-index:2;width:100%;height:100%;margin:0;border-radius:0;background:black}
-        .feed-youtube:is(:fullscreen,.youtube-expanded).is-playing iframe{height:calc(100% - 42px)}
-        .feed-youtube:is(:fullscreen,.youtube-expanded).is-playing .youtube-toolbar{display:flex;inset:auto 0 0;justify-content:flex-end;background:#111;color:white}
-        .feed-youtube:is(:fullscreen,.youtube-expanded) .youtube-toolbar button:hover{color:white}
-        .use-native .youtube-toolbar > :not(.youtube-toolbar-fullscreen){display:none}
+        .feed-youtube{display:block;width:100%;aspect-ratio:4/3;border:0;border-radius:inherit;background:#000}
         .feed-post-gallery{margin-left:-48px;margin-right:-48px}
         .feed-item--status .feed-post-gallery{margin-top:24px}
         .feed-post-gallery-track{display:flex;gap:10px;padding:0 48px;scroll-padding-left:48px;overflow-x:auto;overscroll-behavior-x:contain;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;scrollbar-width:none;outline:none}
@@ -352,8 +313,7 @@
     </section>
 
     <script src="/src/sounds.js" defer></script>
-    <script src="src/youtube-player.js?v=20261122-3" defer></script>
-    <script src="src/main.js?v=20261122-3" defer></script>
+    <script src="src/main.js?v=20261122-4" defer></script>
     <script>
         // Defer analytics until after load + idle to keep the main thread clear for LCP/TBT.
         (function(){

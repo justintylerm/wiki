@@ -103,9 +103,7 @@ const nowPlaying = document.getElementById('now-playing');
         const feedVideos = Array.from(feedWindow ? feedWindow.querySelectorAll('video[data-src]') : []);
         let feedVideoObserver = null;
 
-        const resetYouTubePlayers = Array.from(
-            feedWindow?.querySelectorAll('.feed-youtube') || [], setupYouTubePlayer
-        );
+        const youtubePlayers = feedWindow?.querySelectorAll('iframe.feed-youtube') || [];
 
         function playFeedVideo(video) {
             video.muted = true;
@@ -118,6 +116,9 @@ const nowPlaying = document.getElementById('now-playing');
         }
 
         function wakeFeedVideos() {
+            youtubePlayers.forEach((frame) => {
+                if (!frame.hasAttribute('src')) frame.src = frame.dataset.src;
+            });
             if (!feedVideos.length) return;
             if (!feedVideoObserver) {
                 feedVideoObserver = new IntersectionObserver((entries) => {
@@ -134,7 +135,7 @@ const nowPlaying = document.getElementById('now-playing');
             if (document.fullscreenElement && feedWindow.contains(document.fullscreenElement)) {
                 document.exitFullscreen().catch(() => {});
             }
-            resetYouTubePlayers.forEach((reset) => reset());
+            youtubePlayers.forEach((frame) => frame.removeAttribute('src'));
             if (feedVideoObserver) feedVideoObserver.disconnect();
             feedVideos.forEach((video) => {
                 video.pause();
@@ -188,8 +189,6 @@ const nowPlaying = document.getElementById('now-playing');
         function onFeedKeydown(e) {
             if (e.key !== 'Escape') return;
             if (document.fullscreenElement) return;
-            const fullscreen = feedWindow.querySelector('.youtube-expanded .youtube-fullscreen');
-            if (fullscreen) { fullscreen.click(); return; }
             const expanded = feedWindow.querySelector('.feed-item--post.is-expanded');
             if (expanded) setPostExpanded(expanded, false, { updateUrl: true });
             else closeFeed();
