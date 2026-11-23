@@ -89,6 +89,9 @@ const postImages = (post) => {
     return list.map(assetHref).filter(Boolean).slice(0, MAX_POST_IMAGES);
 };
 
+const volumeIcon = '<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M3 9h4l5-4v14l-5-4H3z"/><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path class="sound-on" d="M15 8.5a5 5 0 0 1 0 7M18 5.5a9 9 0 0 1 0 13"/><path class="sound-off" d="m16 9 5 6m0-6-5 6"/></g></svg>';
+const fullscreenIcon = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path class="expand-icon" d="M3 9V4h6m6 0h6v5m0 6v5h-6m-6 0H3v-5"/><path class="collapse-icon" d="M9 3v6H3m12-6v6h6m-6 12v-6h6M9 21v-6H3"/></svg>';
+
 const renderPostMedia = (post) => {
     const youtubeId = post.type === 'status' && youtubeVideoId(post.youtubeUrl);
     if (youtubeId) {
@@ -101,12 +104,24 @@ const renderPostMedia = (post) => {
                             <a class="youtube-title" href="https://www.youtube.com/watch?v=${youtubeId}" target="_blank" rel="noopener noreferrer" title="${title}">${title}</a>
                             <button class="youtube-play" type="button" aria-label="Play ${title}"><svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M7 3v18l15-9z"/></svg></button>
                             <button class="youtube-mute" type="button" aria-label="Mute video" aria-pressed="false" title="Mute">
-                                <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M3 9h4l5-4v14l-5-4H3z"/><g fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path class="sound-on" d="M15 8.5a5 5 0 0 1 0 7M18 5.5a9 9 0 0 1 0 13"/><path class="sound-off" d="m16 9 5 6m0-6-5 6"/></g></svg>
+                                ${volumeIcon}
                             </button>
                         </div>
                         <button class="youtube-fullscreen" type="button" aria-label="Fullscreen" aria-pressed="false" title="Fullscreen">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path class="expand-icon" d="M3 9V4h6m6 0h6v5m0 6v5h-6m-6 0H3v-5"/><path class="collapse-icon" d="M9 3v6H3m12-6v6h6m-6 12v-6h6M9 21v-6H3"/></svg>
+                            ${fullscreenIcon}
                         </button>
+                        <div class="youtube-toolbar" role="group" aria-label="Video playback controls">
+                            <button type="button" class="youtube-toggle" data-action="play" aria-label="Play" title="Play">
+                                <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path class="play-icon" d="M6 3v18l15-9z"/><path class="pause-icon" d="M5 4h5v16H5zm9 0h5v16h-5z"/><path class="replay-icon" fill="none" stroke="currentColor" stroke-width="2" d="M4 4v6h6M4 10a8 8 0 1 1 .5 6"/></svg>
+                            </button>
+                            <input class="youtube-seek" type="range" min="0" max="0" value="0" step="1" aria-label="Seek through video" disabled>
+                            <span class="youtube-time">0:00</span>
+                            <button type="button" class="youtube-volume-toggle" aria-label="Mute video" aria-pressed="false" title="Mute">${volumeIcon}</button>
+                            <button type="button" class="youtube-native" aria-label="Use YouTube controls for captions and settings" title="Captions and settings in YouTube controls">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" aria-hidden="true"><path d="m9 4 1-2h4l1 2 2 1 2 .2 2 3.5-1 1.8v3l1 1.8-2 3.5-2 .2-2 1-1 2h-4l-1-2-2-1-2-.2-2-3.5 1-1.8v-3l-1-1.8 2-3.5L7 5z"/><circle cx="12" cy="12" r="3.2"/></svg>
+                            </button>
+                            <button type="button" class="youtube-toolbar-fullscreen" aria-label="Fullscreen" aria-pressed="false" title="Fullscreen">${fullscreenIcon}</button>
+                        </div>
                     </figure>`;
     }
     const videoSrc = assetHref(post.video);

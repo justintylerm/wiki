@@ -103,50 +103,9 @@ const nowPlaying = document.getElementById('now-playing');
         const feedVideos = Array.from(feedWindow ? feedWindow.querySelectorAll('video[data-src]') : []);
         let feedVideoObserver = null;
 
-        const youtubeCards = feedWindow ? feedWindow.querySelectorAll('.feed-youtube') : [];
-        youtubeCards.forEach((card) => {
-            const poster = card.querySelector('.youtube-poster');
-            const mute = card.querySelector('.youtube-mute');
-            const fullscreen = card.querySelector('.youtube-fullscreen');
-            card.addEventListener('pointerleave', (event) => {
-                if (event.pointerType === 'mouse' && !poster.hidden) card.classList.add('preview-idle');
-            });
-            card.addEventListener('pointerenter', () => card.classList.remove('preview-idle'));
-            mute.addEventListener('click', () => {
-                const muted = mute.getAttribute('aria-pressed') === 'false';
-                mute.setAttribute('aria-pressed', String(muted));
-                mute.title = muted ? 'Unmute' : 'Mute';
-            });
-            const updateFullscreen = () => {
-                const expanded = document.fullscreenElement === card || card.classList.contains('youtube-expanded');
-                fullscreen.setAttribute('aria-pressed', String(expanded));
-                fullscreen.title = expanded ? 'Exit fullscreen' : 'Fullscreen';
-            };
-            fullscreen.addEventListener('click', async () => {
-                if (document.fullscreenElement === card) await document.exitFullscreen();
-                else if (card.classList.contains('youtube-expanded')) card.classList.remove('youtube-expanded');
-                else {
-                    try { await card.requestFullscreen(); }
-                    catch { card.classList.add('youtube-expanded'); }
-                }
-                updateFullscreen();
-            });
-            card.addEventListener('fullscreenchange', updateFullscreen);
-            card.querySelector('.youtube-play').addEventListener('click', () => {
-                const player = document.createElement('iframe');
-                player.title = card.querySelector('.youtube-title').textContent;
-                player.allow = 'autoplay; encrypted-media; fullscreen; picture-in-picture';
-                player.allowFullscreen = true;
-                player.referrerPolicy = 'strict-origin-when-cross-origin';
-                const muted = mute.getAttribute('aria-pressed') === 'true' ? '1' : '0';
-                player.src = 'https://www.youtube-nocookie.com/embed/' + card.dataset.youtubeId
-                    + '?autoplay=1&controls=1&playsinline=1&mute=' + muted;
-                poster.hidden = true;
-                card.classList.add('is-playing');
-                card.appendChild(player);
-                player.focus();
-            });
-        });
+        const resetYouTubePlayers = Array.from(
+            feedWindow?.querySelectorAll('.feed-youtube') || [], setupYouTubePlayer
+        );
 
         function playFeedVideo(video) {
             video.muted = true;
@@ -175,13 +134,7 @@ const nowPlaying = document.getElementById('now-playing');
             if (document.fullscreenElement && feedWindow.contains(document.fullscreenElement)) {
                 document.exitFullscreen().catch(() => {});
             }
-            youtubeCards.forEach((card) => {
-                card.querySelector('iframe')?.remove();
-                card.querySelector('.youtube-poster').hidden = false;
-                card.classList.remove('is-playing', 'youtube-expanded', 'preview-idle');
-                card.querySelector('.youtube-fullscreen').setAttribute('aria-pressed', 'false');
-                card.querySelector('.youtube-fullscreen').title = 'Fullscreen';
-            });
+            resetYouTubePlayers.forEach((reset) => reset());
             if (feedVideoObserver) feedVideoObserver.disconnect();
             feedVideos.forEach((video) => {
                 video.pause();
