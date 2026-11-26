@@ -59,7 +59,9 @@
         /* Soften the moving edge. At rest it covers only the space before “setup”. */
         .setup-category::after{content:"";position:absolute;inset:0 0 0 auto;width:var(--word-gap);background:linear-gradient(to right,transparent,var(--bg));pointer-events:none}
         .setup-category-label{flex:none;padding-inline-start:var(--word-gap);white-space:nowrap;text-decoration:underline;text-decoration-thickness:1px;text-underline-offset:3px}
-        .setup-category:hover .setup-category-label{color:rgba(0,0,0,.5)}
+        @media (hover:hover){
+            .setup-category:hover .setup-category-label{color:rgba(0,0,0,.5)}
+        }
         .setup-suffix{flex:none;pointer-events:none;transition:opacity .2s ease}
         .setup-heading .accordion-trigger:hover ~ .setup-suffix{opacity:.7}
         #accordion-setup{height:0;max-height:none;transition-property:height,opacity}
