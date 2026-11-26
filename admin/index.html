@@ -31,12 +31,17 @@
         .add{border:1px dashed var(--border);background:none;border-radius:8px;color:var(--muted);font-family:inherit;font-size:13px;padding:8px 12px;cursor:pointer;width:100%;text-align:left}
         .add:hover{color:var(--text);border-color:rgba(0,0,0,.3)}
         .tagrow input.url{font-size:13px;color:var(--body)}
-        .setup-category{border:1px solid var(--border-soft);border-radius:8px;padding:12px;margin-bottom:12px}
+        .setup-category{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:12px 8px;border:1px solid var(--border-soft);border-radius:8px;padding:12px;margin-bottom:12px}
         .setup-category .grow{min-width:0}
-        .setup-category>.grow{gap:10px}
+        .setup-category .item-btns{flex-direction:row;padding:0}
+        .setup-category .ibtn{min-width:24px;min-height:24px}
+        .setup-category .ibtn:disabled{opacity:.3;cursor:default;background:none;color:var(--muted)}
         .setup-name{font-weight:500}
+        .setup-items{grid-column:1/-1;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px 16px}
         .setup-items:empty{display:none}
-        .setup-items .item:last-child{margin-bottom:0}
+        .setup-items>.item{display:grid;gap:2px;margin:0}
+        .setup-items .item-btns{justify-content:flex-start}
+        .setup-category>.add{grid-column:1/-1;justify-self:start}
         .bar{position:fixed;bottom:0;left:0;right:0;background:rgba(255,255,255,.92);backdrop-filter:blur(8px);border-top:1px solid var(--border-soft);padding:14px 24px calc(14px + env(safe-area-inset-bottom))}
         .bar-inner{max-width:640px;margin:0 auto;display:flex;align-items:center;gap:14px}
         .publish{background:#000;color:#fff;border:none;border-radius:999px;font-family:inherit;font-size:14px;font-weight:500;letter-spacing:-.01em;padding:11px 26px;cursor:pointer;transition:opacity .15s ease}
@@ -330,26 +335,49 @@
     function itemRow(listEl, fields, subject = 'row') {
         const row = document.createElement('div');
         row.className = 'item';
+        const gridItem = subject === 'item';
         const grow = document.createElement('div');
         grow.className = 'grow';
         fields.forEach((f) => grow.appendChild(f));
         const btns = document.createElement('div');
         btns.className = 'item-btns';
-        [['↑', 'Move ' + subject + ' up', () => { const p = row.previousElementSibling; if (p) { listEl.insertBefore(row, p); markDirty(); } }],
-         ['↓', 'Move ' + subject + ' down', () => { const n = row.nextElementSibling; if (n) { listEl.insertBefore(n, row); markDirty(); } }],
+        function move(earlier) {
+            const neighbor = earlier ? row.previousElementSibling : row.nextElementSibling;
+            if (!neighbor) return;
+            // Move the neighbor so keyboard focus stays with the item being arranged.
+            listEl.insertBefore(neighbor, earlier ? row.nextElementSibling : row);
+            markDirty();
+        }
+        [[gridItem ? '←' : '↑', gridItem ? 'Move item earlier' : 'Move ' + subject + ' up', () => move(true)],
+         [gridItem ? '→' : '↓', gridItem ? 'Move item later' : 'Move ' + subject + ' down', () => move(false)],
          ['✕', 'Remove ' + subject, () => { row.remove(); markDirty(); }]
         ].forEach(([txt, label, fn]) => {
             const b = document.createElement('button');
             b.className = 'ibtn'; b.type = 'button'; b.textContent = txt;
             b.title = label;
             b.setAttribute('aria-label', label);
-            b.addEventListener('click', fn);
+            b.addEventListener('click', () => {
+                fn();
+                if (gridItem) {
+                    syncSetupArrows(listEl);
+                    if (b.disabled) fields[0].focus();
+                }
+            });
             btns.appendChild(b);
         });
         row.appendChild(grow);
         row.appendChild(btns);
         listEl.appendChild(row);
+        if (gridItem) syncSetupArrows(listEl);
         return row;
+    }
+
+    function syncSetupArrows(list) {
+        for (const item of list.children) {
+            const [earlier, later] = item.querySelectorAll('.ibtn');
+            earlier.disabled = !item.previousElementSibling;
+            later.disabled = !item.nextElementSibling;
+        }
     }
 
     const addText = (listId, value, rows) => itemRow($(listId), [makeTextarea(value, rows)]);
@@ -377,8 +405,9 @@
         add.className = 'add sub-add';
         add.textContent = '+ Add item';
         add.addEventListener('click', () => { addItem('').focus(); markDirty(); });
-        const row = itemRow($('setupList'), [name, list, add], 'category');
+        const row = itemRow($('setupList'), [name], 'category');
         row.classList.add('setup-category');
+        row.append(list, add);
         return name;
     }
 
