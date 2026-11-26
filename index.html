@@ -38,16 +38,33 @@
         .bio a{color:var(--accent);text-decoration:underline;text-decoration-color:currentColor;text-decoration-thickness:1px;text-underline-offset:3px;transition:color .15s ease}
         .bio a:hover{color:rgba(0,0,0,.5)}
         .green{color:inherit}
-        .accordions{display:flex;flex-direction:column;margin-top:20px;border-top:1px solid var(--border);border-bottom:1px solid var(--border)}
+        .accordions{--accordion-fade:.3s ease;--icon-size:10px;--icon-stroke:1px;display:flex;flex-direction:column;margin-top:20px;border-top:1px solid var(--border);border-bottom:1px solid var(--border)}
         .accordion+.accordion{border-top:1px solid var(--border)}
         .accordion-trigger{display:flex;align-items:center;justify-content:space-between;width:100%;padding:18px 0;background:none;border:none;color:var(--text-body);font-family:inherit;font-size:17px;font-weight:400;letter-spacing:-.016em;line-height:1.38em;cursor:pointer;transition:opacity .2s ease;text-align:left}
         .accordion-trigger:hover{opacity:.7}
         .accordion-icon{position:relative;width:24px;height:24px;color:var(--text-body);font-size:0;transition:transform .3s cubic-bezier(.22,1,.36,1);text-align:center;flex-shrink:0;user-select:none;transform-origin:50% 50%}
-        .accordion-icon::before,.accordion-icon::after{content:"";position:absolute;left:50%;top:50%;width:10px;height:1px;background:currentColor;transform:translate(-50%,-50%)}
+        .accordion-icon::before,.accordion-icon::after{content:"";position:absolute;left:50%;top:50%;width:var(--icon-size);height:var(--icon-stroke);background:currentColor;transform:translate(-50%,-50%)}
         .accordion-icon::after{transform:translate(-50%,-50%) rotate(90deg)}
         .accordion.open .accordion-icon,.accordion.panel-open .accordion-icon{transform:rotate(45deg)}
-        .accordion-content{overflow:hidden;max-height:0;transition:max-height .4s cubic-bezier(.22,1,.36,1),opacity .3s ease;opacity:0}
+        .accordion-content{overflow:hidden;max-height:0;transition:max-height .4s cubic-bezier(.22,1,.36,1),opacity var(--accordion-fade);opacity:0}
         .accordion.open .accordion-content{opacity:1}
+        .setup-heading{--word-gap:.25em;position:relative;display:flex;align-items:center;padding-right:32px;color:var(--text-body);font-size:17px;letter-spacing:-.016em;line-height:1.38}
+        .setup-heading .accordion-trigger{width:auto;flex-shrink:0}
+        .setup-heading .accordion-trigger::before{content:"";position:absolute;inset:0}
+        .setup-heading .accordion-icon{position:absolute;right:0}
+        .setup-category{position:relative;display:flex;align-items:center;min-width:0;width:calc(var(--category-width,0px) + var(--word-gap));min-height:28px;overflow:hidden;padding:0;border:0;background:none;color:var(--text);font:inherit;letter-spacing:inherit;cursor:pointer;transition:width .35s cubic-bezier(.37,0,.3,1),opacity var(--accordion-fade),visibility var(--accordion-fade)}
+        .accordion:not(.open) .setup-category{width:var(--word-gap);opacity:0;visibility:hidden;pointer-events:none}
+        .setup-category:disabled{pointer-events:none}
+        .setup-category[aria-disabled="true"] .setup-category-label{text-decoration:none;color:var(--text-body)}
+        /* Soften the moving edge. At rest it covers only the space before “setup”. */
+        .setup-category::after{content:"";position:absolute;inset:0 0 0 auto;width:var(--word-gap);background:linear-gradient(to right,transparent,var(--bg));pointer-events:none}
+        .setup-category-label{flex:none;padding-inline-start:var(--word-gap);white-space:nowrap;text-decoration:underline;text-decoration-thickness:1px;text-underline-offset:3px}
+        .setup-category:hover .setup-category-label{color:rgba(0,0,0,.5)}
+        .setup-suffix{flex:none;pointer-events:none;transition:opacity .2s ease}
+        .setup-heading .accordion-trigger:hover ~ .setup-suffix{opacity:.7}
+        #accordion-setup{height:0;max-height:none;transition-property:height,opacity}
+        .setup-loadout[hidden]{display:none}
+        .setup-loadout{overflow-wrap:anywhere}
         .accordion-inner{padding-bottom:20px;color:var(--text-body);font-size:14px;line-height:1.42em;font-weight:400;letter-spacing:-.012em}
         .accordion-inner a{color:#000;text-decoration:underline;text-decoration-color:currentColor;text-decoration-thickness:1px;text-underline-offset:3px;transition:color .2s ease}
         .accordion-inner a:hover{color:rgba(0,0,0,.5)}
@@ -244,22 +261,41 @@
             </div>
 
             <div class="accordion">
-                <button class="accordion-trigger" aria-expanded="false" aria-controls="accordion-setup">
-                    <span>My setup</span>
-                    <span class="accordion-icon" aria-hidden="true">+</span>
-                </button>
-                <div class="accordion-content" id="accordion-setup" role="region" aria-label="My setup">
-                    <div class="accordion-inner">
-                        <div class="tag-list"><!-- cms:setup -->
-                            <span class="tag">Obsidian</span>
-                            <span class="tag">Superwhisper</span>
+                <div class="setup-heading">
+                    <button class="accordion-trigger" aria-label="My setup" aria-expanded="false" aria-controls="accordion-setup">
+                        <span>My</span>
+                        <span class="accordion-icon" aria-hidden="true">+</span>
+                    </button>
+                    <button class="setup-category" type="button" aria-controls="accordion-setup" data-sound="expand" disabled>
+                        <span class="setup-category-label"></span>
+                    </button>
+                    <span class="setup-suffix" aria-hidden="true">setup</span>
+                </div>
+                <div class="accordion-content" id="accordion-setup" role="region" aria-label="My setup" inert>
+                    <div class="accordion-inner" aria-live="polite"><!-- cms:setup -->
+                        <div class="tag-list setup-loadout" data-category="software">
+                            <span class="tag">CleanShot X</span>
                             <span class="tag">Alfred</span>
                             <span class="tag">Figma</span>
-                            <span class="tag">CleanShot X</span>
+                            <span class="tag">Superwhisper</span>
                             <span class="tag">Claude</span>
                             <span class="tag">Codex</span>
-                        <!-- /cms:setup --></div>
-                    </div>
+                        </div>
+                        <div class="tag-list setup-loadout" data-category="desk" hidden>
+                            <span class="tag">Mechanical keyboard</span>
+                            <span class="tag">Trackpad</span>
+                            <span class="tag">Monitor arm</span>
+                            <span class="tag">Desk lamp</span>
+                            <span class="tag">USB-C dock</span>
+                            <span class="tag">Studio headphones</span>
+                        </div>
+                        <div class="tag-list setup-loadout" data-category="every day carry" hidden>
+                            <span class="tag">Pocket notebook</span>
+                            <span class="tag">Gel pen</span>
+                            <span class="tag">Slim wallet</span>
+                            <span class="tag">Key organizer</span>
+                        </div>
+                    <!-- /cms:setup --></div>
                 </div>
             </div>
         </section>
@@ -315,7 +351,7 @@
     </section>
 
     <script src="/src/sounds.js" defer></script>
-    <script src="src/main.js?v=20261122-4" defer></script>
+    <script src="src/main.js?v=20261126-6" defer></script>
     <script>
         // Defer analytics until after load + idle to keep the main thread clear for LCP/TBT.
         (function(){

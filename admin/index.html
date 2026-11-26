@@ -31,6 +31,12 @@
         .add{border:1px dashed var(--border);background:none;border-radius:8px;color:var(--muted);font-family:inherit;font-size:13px;padding:8px 12px;cursor:pointer;width:100%;text-align:left}
         .add:hover{color:var(--text);border-color:rgba(0,0,0,.3)}
         .tagrow input.url{font-size:13px;color:var(--body)}
+        .setup-category{border:1px solid var(--border-soft);border-radius:8px;padding:12px;margin-bottom:12px}
+        .setup-category .grow{min-width:0}
+        .setup-category>.grow{gap:10px}
+        .setup-name{font-weight:500}
+        .setup-items:empty{display:none}
+        .setup-items .item:last-child{margin-bottom:0}
         .bar{position:fixed;bottom:0;left:0;right:0;background:rgba(255,255,255,.92);backdrop-filter:blur(8px);border-top:1px solid var(--border-soft);padding:14px 24px calc(14px + env(safe-area-inset-bottom))}
         .bar-inner{max-width:640px;margin:0 auto;display:flex;align-items:center;gap:14px}
         .publish{background:#000;color:#fff;border:none;border-radius:999px;font-family:inherit;font-size:14px;font-weight:500;letter-spacing:-.01em;padding:11px 26px;cursor:pointer;transition:opacity .15s ease}
@@ -150,9 +156,9 @@
     </section>
 
     <section>
-        <div class="label"><span>My setup</span></div>
+        <div class="label"><span>My setup</span><span class="hint">first category with items opens by default</span></div>
         <div id="setupList"></div>
-        <button class="add" data-add="setup">+ Add tool</button>
+        <button class="add" type="button" data-add="setup">+ Add category</button>
     </section>
 
     <section>
@@ -321,7 +327,7 @@
         i.addEventListener('input', markDirty);
         return i;
     }
-    function itemRow(listEl, fields) {
+    function itemRow(listEl, fields, subject = 'row') {
         const row = document.createElement('div');
         row.className = 'item';
         const grow = document.createElement('div');
@@ -329,12 +335,14 @@
         fields.forEach((f) => grow.appendChild(f));
         const btns = document.createElement('div');
         btns.className = 'item-btns';
-        [['↑', () => { const p = row.previousElementSibling; if (p) { listEl.insertBefore(row, p); markDirty(); } }],
-         ['↓', () => { const n = row.nextElementSibling; if (n) { listEl.insertBefore(n, row); markDirty(); } }],
-         ['✕', () => { row.remove(); markDirty(); }]
-        ].forEach(([txt, fn]) => {
+        [['↑', 'Move ' + subject + ' up', () => { const p = row.previousElementSibling; if (p) { listEl.insertBefore(row, p); markDirty(); } }],
+         ['↓', 'Move ' + subject + ' down', () => { const n = row.nextElementSibling; if (n) { listEl.insertBefore(n, row); markDirty(); } }],
+         ['✕', 'Remove ' + subject, () => { row.remove(); markDirty(); }]
+        ].forEach(([txt, label, fn]) => {
             const b = document.createElement('button');
             b.className = 'ibtn'; b.type = 'button'; b.textContent = txt;
+            b.title = label;
+            b.setAttribute('aria-label', label);
             b.addEventListener('click', fn);
             btns.appendChild(b);
         });
@@ -352,14 +360,34 @@
         ]);
         row.classList.add('tagrow');
     };
-    const addSetup = (s) => itemRow($('setupList'), [makeInput(s, 'Tool name')]);
+    function addSetupCategory(category = { label: '', items: [] }) {
+        const name = makeInput(category.label, 'Category name', 'setup-name');
+        name.setAttribute('aria-label', 'Category name');
+        const list = document.createElement('div');
+        list.className = 'setup-items';
+        function addItem(value) {
+            const input = makeInput(value, 'Item name');
+            input.setAttribute('aria-label', 'Item name');
+            itemRow(list, [input], 'item');
+            return input;
+        }
+        category.items.forEach(addItem);
+        const add = document.createElement('button');
+        add.type = 'button';
+        add.className = 'add sub-add';
+        add.textContent = '+ Add item';
+        add.addEventListener('click', () => { addItem('').focus(); markDirty(); });
+        const row = itemRow($('setupList'), [name, list, add], 'category');
+        row.classList.add('setup-category');
+        return name;
+    }
 
     document.querySelectorAll('.add[data-add]').forEach((btn) => {
         btn.addEventListener('click', () => {
             const kind = btn.dataset.add;
             if (kind === 'bio') addText('bioList', '', 2);
             if (kind === 'hobbies') addHobby({ label: '', url: '' });
-            if (kind === 'setup') addSetup('');
+            if (kind === 'setup') addSetupCategory().focus();
             if (kind === 'para') addParagraphBlock('');
             if (kind === 'list') addListBlock(['']);
             if (kind === 'heading') addTextBlock('heading', '', 'Heading', 1);
@@ -379,7 +407,9 @@
         $('hobbiesList').innerHTML = '';
         c.hobbies.forEach(addHobby);
         $('setupList').innerHTML = '';
-        c.setup.forEach(addSetup);
+        const categories = Array.isArray(c.setupCategories) ? c.setupCategories
+            : (c.setup?.length ? [{ label: 'software', items: c.setup }] : []);
+        categories.forEach(addSetupCategory);
         $('caption').value = c.photoCaption;
         dirty = false;
         publishBtn.disabled = true;
@@ -406,7 +436,20 @@
         const mm = String(today.getMonth() + 1).padStart(2, '0');
         const dd = String(today.getDate()).padStart(2, '0');
         const yy = String(today.getFullYear()).slice(-2);
+        const setupCategories = [];
+        for (const row of $('setupList').children) {
+            const name = row.querySelector('.setup-name');
+            const label = name.value.trim();
+            const items = Array.from(row.querySelectorAll('.setup-items input'))
+                .map((input) => input.value.trim()).filter(Boolean);
+            if (!label && items.length) {
+                name.focus();
+                throw new Error('Enter a category name for these setup items before publishing.');
+            }
+            if (label) setupCategories.push({ label, items });
+        }
         return {
+            ...loadedContent,
             greeting: $('greeting').value.trim(),
             bio: texts('bioList'),
             hobbies: Array.from($('hobbiesList').children).map((row) => {
@@ -415,8 +458,8 @@
                 if (url.value.trim()) h.url = url.value.trim();
                 return h;
             }).filter((h) => h.label),
-            setup: Array.from($('setupList').querySelectorAll('input'))
-                .map((i) => i.value.trim()).filter(Boolean),
+            setupCategories,
+            setup: setupCategories.find((category) => category.label.toLowerCase() === 'software')?.items || [],
             photoCaption: $('caption').value.trim(),
             lastUpdated: `${mm}-${dd}-${yy}`
         };
@@ -428,7 +471,7 @@
             const query = expectedSha
                 ? `?head_sha=${encodeURIComponent(expectedSha)}&per_page=1`
                 : '?per_page=1';
-            const res = await gh('/actions/runs' + query);
+            const res = await gh('/actions/workflows/static.yml/runs' + query);
             if (!res.ok) return;
             const run = (await res.json()).workflow_runs?.[0];
             if (!run) { setStatus('Deploy queued…'); continue; }
@@ -446,7 +489,6 @@
         setStatus('Publishing…');
         try {
             const content = collect();
-            let result;
             const body = {
                 message: 'Update wiki content via admin',
                 content: b64encode(JSON.stringify(content, null, 2) + '\n'),
@@ -454,18 +496,9 @@
                 sha
             };
             const res = await gh(`/contents/${FILE}`, { method: 'PUT', body: JSON.stringify(body) });
-            if (res.status === 409) { // sha out of date — refetch and retry once
-                const cur = await gh(`/contents/${FILE}?ref=${BRANCH}`);
-                sha = (await cur.json()).sha;
-                body.sha = sha;
-                const retry = await gh(`/contents/${FILE}`, { method: 'PUT', body: JSON.stringify(body) });
-                if (!retry.ok) throw new Error('publish failed (' + retry.status + ')');
-                result = await retry.json();
-            } else if (!res.ok) {
-                throw new Error('publish failed (' + res.status + ')');
-            } else {
-                result = await res.json();
-            }
+            if (res.status === 409) throw new Error('The homepage changed on GitHub. Copy your edits, then reload the latest version before publishing.');
+            if (!res.ok) throw new Error('publish failed (' + res.status + ')');
+            const result = await res.json();
             sha = result.content.sha;
             loadedContent = content;
             dirty = false;

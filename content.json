@@ -34,6 +34,39 @@
     "Claude",
     "Codex"
   ],
+  "setupCategories": [
+    {
+      "label": "software",
+      "items": [
+        "CleanShot X",
+        "Alfred",
+        "Figma",
+        "Superwhisper",
+        "Claude",
+        "Codex"
+      ]
+    },
+    {
+      "label": "desk",
+      "items": [
+        "Mechanical keyboard",
+        "Trackpad",
+        "Monitor arm",
+        "Desk lamp",
+        "USB-C dock",
+        "Studio headphones"
+      ]
+    },
+    {
+      "label": "every day carry",
+      "items": [
+        "Pocket notebook",
+        "Gel pen",
+        "Slim wallet",
+        "Key organizer"
+      ]
+    }
+  ],
   "photoCaption": "Ollie and I, 2025",
   "lastUpdated": "11-01-26"
 }

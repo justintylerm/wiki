@@ -43,6 +43,53 @@ const nowPlaying = document.getElementById('now-playing');
             });
         }
 
+        const setupContent = document.getElementById('accordion-setup');
+        const setupCategory = document.querySelector('.setup-category');
+        const setupItems = setupContent?.querySelector('.accordion-inner');
+        const loadouts = Array.from(setupContent?.querySelectorAll('[data-category]') ?? []);
+        if (setupContent && !loadouts.length) setupContent.closest('.accordion').hidden = true;
+
+        function fitOpenSetup() {
+            if (setupItems && !setupContent.inert) {
+                setupContent.style.height = setupItems.getBoundingClientRect().height + 'px';
+            }
+        }
+
+        if (setupCategory && loadouts.length) {
+            const setupLabel = setupCategory.querySelector('.setup-category-label');
+            let selectedLoadout = 0;
+
+            function fitSetupLabel() {
+                setupCategory.style.setProperty('--category-width', setupLabel.getBoundingClientRect().width + 'px');
+            }
+
+            function showSetupCategory() {
+                loadouts.forEach((list, index) => { list.hidden = index !== selectedLoadout; });
+                const name = loadouts[selectedLoadout].dataset.category.toLowerCase();
+                const nextName = loadouts[(selectedLoadout + 1) % loadouts.length].dataset.category.toLowerCase();
+                setupLabel.textContent = name;
+                fitSetupLabel();
+                if (loadouts.length > 1) {
+                    setupCategory.title = 'Next setup: ' + nextName;
+                    setupCategory.setAttribute('aria-label', name + ', switch to ' + nextName + ' setup');
+                } else {
+                    setupCategory.setAttribute('aria-disabled', 'true');
+                }
+            }
+
+            showSetupCategory();
+            setupCategory.addEventListener('click', () => {
+                selectedLoadout = (selectedLoadout + 1) % loadouts.length;
+                showSetupCategory();
+                fitOpenSetup();
+            });
+
+            if ('ResizeObserver' in window) {
+                new ResizeObserver(fitOpenSetup).observe(setupItems);
+                new ResizeObserver(fitSetupLabel).observe(setupLabel);
+            }
+        }
+
         document.querySelectorAll('.accordion-trigger').forEach(trigger => {
             trigger.addEventListener('click', () => {
                 // "What's on my mind" opens the floating feed on desktop. On mobile,
@@ -53,19 +100,20 @@ const nowPlaying = document.getElementById('now-playing');
                     return;
                 }
 
-                const accordion = trigger.parentElement;
+                const accordion = trigger.closest('.accordion');
                 const content = accordion.querySelector('.accordion-content');
                 const isOpen = accordion.classList.contains('open');
 
-                if (isOpen) {
-                    content.style.maxHeight = '0px';
-                    accordion.classList.remove('open');
-                    trigger.setAttribute('aria-expanded', 'false');
+                if (content === setupContent && setupCategory) {
+                    setupContent.inert = isOpen;
+                    setupCategory.disabled = isOpen || loadouts.length < 2;
+                    if (isOpen) setupContent.style.height = '0px';
+                    else fitOpenSetup();
                 } else {
-                    content.style.maxHeight = content.scrollHeight + 'px';
-                    accordion.classList.add('open');
-                    trigger.setAttribute('aria-expanded', 'true');
+                    content.style.maxHeight = isOpen ? '0px' : content.scrollHeight + 'px';
                 }
+                accordion.classList.toggle('open', !isOpen);
+                trigger.setAttribute('aria-expanded', String(!isOpen));
 
                 if (window.uiSound) window.uiSound.play(isOpen ? 'collapse' : 'expand');
                 updateNowPlayingVisibility();

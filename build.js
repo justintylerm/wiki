@@ -43,11 +43,6 @@ inject('hobbies', '\n' + content.hobbies.map((h) => {
     return `                            <span class="tag">${label}</span>`;
 }).join('\n') + '\n                        ');
 
-// Setup tags
-inject('setup', '\n' + content.setup.map((s) =>
-    `                            <span class="tag">${s}</span>`
-).join('\n') + '\n                        ');
-
 // Photo caption
 inject('caption', content.photoCaption);
 
@@ -61,6 +56,20 @@ inject('updated', `Last updated ${stamp}`);
 
 const escapeHtml = (s) => String(s == null ? '' : s)
     .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+
+// Older content stored the software items directly in setup.
+const setupCategories = content.setupCategories ?? [{ label: 'software', items: content.setup ?? [] }];
+const setupLists = [];
+for (const category of setupCategories) {
+    const label = category.label.trim().toLowerCase();
+    const items = category.items.map(item => item.trim()).filter(Boolean);
+    if (!label || !items.length) continue;
+    const tags = items.map(item => `                            <span class="tag">${escapeHtml(item)}</span>`);
+    setupLists.push(`                        <div class="tag-list setup-loadout" data-category="${escapeHtml(label)}"${setupLists.length ? ' hidden' : ''}>
+${tags.join('\n')}
+                        </div>`);
+}
+inject('setup', '\n' + setupLists.join('\n') + '\n                    ');
 
 // Feed article blocks. Existing paragraph/list posts remain valid while newer
 // posts can mix headings, quotes, individual images, and multi-image galleries.
