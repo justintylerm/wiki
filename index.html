@@ -41,7 +41,6 @@
         .accordions{--accordion-fade:.3s ease;--icon-size:10px;--icon-stroke:1px;display:flex;flex-direction:column;margin-top:20px;border-top:1px solid var(--border);border-bottom:1px solid var(--border)}
         .accordion+.accordion{border-top:1px solid var(--border)}
         .accordion-trigger{display:flex;align-items:center;justify-content:space-between;width:100%;padding:18px 0;background:none;border:none;color:var(--text-body);font-family:inherit;font-size:17px;font-weight:400;letter-spacing:-.016em;line-height:1.38em;cursor:pointer;transition:opacity .2s ease;text-align:left}
-        .accordion-trigger:hover{opacity:.7}
         .accordion-icon{position:relative;width:24px;height:24px;color:var(--text-body);font-size:0;transition:transform .3s cubic-bezier(.22,1,.36,1);text-align:center;flex-shrink:0;user-select:none;transform-origin:50% 50%}
         .accordion-icon::before,.accordion-icon::after{content:"";position:absolute;left:50%;top:50%;width:var(--icon-size);height:var(--icon-stroke);background:currentColor;transform:translate(-50%,-50%)}
         .accordion-icon::after{transform:translate(-50%,-50%) rotate(90deg)}
@@ -59,11 +58,7 @@
         /* Soften the moving edge. At rest it covers only the space before “setup”. */
         .setup-category::after{content:"";position:absolute;inset:0 0 0 auto;width:var(--word-gap);background:linear-gradient(to right,transparent,var(--bg));pointer-events:none}
         .setup-category-label{flex:none;padding-inline-start:var(--word-gap);white-space:nowrap;text-decoration:underline;text-decoration-thickness:1px;text-underline-offset:3px}
-        @media (hover:hover){
-            .setup-category:hover .setup-category-label{color:rgba(0,0,0,.5)}
-        }
         .setup-suffix{flex:none;pointer-events:none;transition:opacity .2s ease}
-        .setup-heading .accordion-trigger:hover ~ .setup-suffix{opacity:.7}
         #accordion-setup{height:0;max-height:none;transition-property:height,opacity}
         .setup-loadout[hidden]{display:none}
         .setup-loadout{overflow-wrap:anywhere}
@@ -92,7 +87,6 @@
         .feed-bar{height:58px;display:flex;align-items:center;justify-content:space-between;gap:20px;padding:0 20px;border-bottom:1px solid rgba(0,0,0,.08);background:var(--bg);user-select:none;flex-shrink:0}
         .feed-heading{font-size:13px;letter-spacing:-.012em;color:var(--text-body)}
         .feed-close{width:24px;height:24px;padding:0;border:0;background:none;color:var(--text-body);font-family:inherit;font-size:20px;font-weight:300;line-height:1;cursor:pointer;transition:opacity .2s ease}
-        .feed-close:hover{opacity:.5}
         .feed-scroll{min-height:0;overflow-y:auto;overscroll-behavior:contain;-ms-overflow-style:none;scrollbar-width:none}
         .feed-scroll::-webkit-scrollbar{display:none}
         .feed-items{padding:0 48px 70px}
@@ -134,7 +128,6 @@
         .feed-article-gallery figure:only-child{grid-column:1/-1}
         .feed-article-gallery img{display:block;width:100%;height:100%;min-height:180px;aspect-ratio:4/3;object-fit:cover;background:#e8e8e4;border-radius:10px}
         .feed-post-toggle{display:inline-flex;align-items:center;gap:5px;margin-top:18px;padding:0;border:0;background:none;color:var(--text-muted);font-family:inherit;font-size:12px;line-height:1.4em;letter-spacing:-.01em;cursor:pointer;transition:color .2s ease}
-        .feed-post-toggle:hover{color:#000}
         .feed-chevron{width:13px;height:13px;fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round;transition:transform .3s cubic-bezier(.22,1,.36,1)}
         .feed-post-toggle[aria-expanded="true"] .feed-chevron{transform:rotate(180deg)}
         .page-wrapper{display:flex;min-height:100vh}
@@ -150,6 +143,15 @@
         @keyframes fadeUp{to{opacity:1;transform:translateY(0)}}
         @keyframes photoFade{from{opacity:0}to{opacity:1}}
         .delay-1{animation-delay:.06s}.delay-2{animation-delay:.14s}.delay-3{animation-delay:.22s}.delay-4{animation-delay:.30s}.delay-5{animation-delay:.38s}.delay-6{animation-delay:.44s}
+        @media (hover:none) and (pointer:coarse){
+            .accordion-trigger,.setup-category,.feed-post-toggle,.feed-close{-webkit-tap-highlight-color:transparent}
+        }
+        @media (hover:hover){
+            .accordion-trigger:hover,.setup-heading .accordion-trigger:hover ~ .setup-suffix{opacity:.7}
+            .setup-category:hover .setup-category-label{color:rgba(0,0,0,.5)}
+            .feed-post-toggle:hover{color:#000}
+            .feed-close:hover{opacity:.5}
+        }
         @media (prefers-reduced-motion: reduce){.fade-up{animation:none;opacity:1;transform:none}*,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important}}
         @media (max-width:1100px){
             .page-wrapper{flex-direction:column}
