@@ -198,7 +198,7 @@ const nowPlaying = document.getElementById('now-playing');
             clearTimeout(feedHideTimer);
             feedReturnFocus = trigger || document.activeElement;
             trigger.setAttribute('aria-expanded', 'true');
-            trigger.parentElement.classList.add('panel-open');
+            trigger.closest('.accordion').classList.add('panel-open');
             document.body.classList.add('feed-open');
 
             feedWindow.hidden = false;
@@ -221,14 +221,18 @@ const nowPlaying = document.getElementById('now-playing');
             document.body.classList.remove('feed-open');
             document.removeEventListener('keydown', onFeedKeydown);
             clearTimeout(feedHideTimer);
-            feedHideTimer = setTimeout(() => {
-                if (!feedWindow.classList.contains('open')) feedWindow.hidden = true;
-            }, 420);
+            if (mobileBreakpoint.matches && window.matchMedia('(any-pointer: coarse)').matches) {
+                feedWindow.hidden = true;
+            } else {
+                feedHideTimer = setTimeout(() => {
+                    if (!feedWindow.classList.contains('open')) feedWindow.hidden = true;
+                }, 420);
+            }
 
             const trigger = document.querySelector('[aria-controls="accordion-mind"]');
             if (trigger) {
                 trigger.setAttribute('aria-expanded', 'false');
-                trigger.parentElement.classList.remove('panel-open');
+                trigger.closest('.accordion').classList.remove('panel-open');
             }
             if (feedReturnFocus && typeof feedReturnFocus.focus === 'function') feedReturnFocus.focus();
             feedReturnFocus = null;

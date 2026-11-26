@@ -40,17 +40,17 @@
         .green{color:inherit}
         .accordions{--accordion-fade:.3s ease;--icon-size:10px;--icon-stroke:1px;display:flex;flex-direction:column;margin-top:20px;border-top:1px solid var(--border);border-bottom:1px solid var(--border)}
         .accordion+.accordion{border-top:1px solid var(--border)}
-        .accordion-trigger{display:flex;align-items:center;justify-content:space-between;width:100%;padding:18px 0;background:none;border:none;color:var(--text-body);font-family:inherit;font-size:17px;font-weight:400;letter-spacing:-.016em;line-height:1.38em;cursor:pointer;transition:opacity .2s ease;text-align:left}
+        .accordion-heading{position:relative;display:flex;align-items:center;padding-right:32px;color:var(--text-body);font-size:17px;letter-spacing:-.016em;line-height:1.38}
+        .accordion-title{display:flex;align-items:center;min-height:24px;margin:18px 0;pointer-events:none;transition:opacity .2s ease}
+        .accordion-trigger{position:absolute;inset:0;display:flex;align-items:center;justify-content:flex-end;width:100%;border:0;background:none;color:inherit;cursor:pointer;transition:opacity .2s ease}
         .accordion-icon{position:relative;width:24px;height:24px;color:var(--text-body);font-size:0;transition:transform .3s cubic-bezier(.22,1,.36,1);text-align:center;flex-shrink:0;user-select:none;transform-origin:50% 50%}
         .accordion-icon::before,.accordion-icon::after{content:"";position:absolute;left:50%;top:50%;width:var(--icon-size);height:var(--icon-stroke);background:currentColor;transform:translate(-50%,-50%)}
         .accordion-icon::after{transform:translate(-50%,-50%) rotate(90deg)}
         .accordion.open .accordion-icon,.accordion.panel-open .accordion-icon{transform:rotate(45deg)}
         .accordion-content{overflow:hidden;max-height:0;transition:max-height .4s cubic-bezier(.22,1,.36,1),opacity var(--accordion-fade);opacity:0}
         .accordion.open .accordion-content{opacity:1}
-        .setup-heading{--word-gap:.25em;position:relative;display:flex;align-items:center;padding-right:32px;color:var(--text-body);font-size:17px;letter-spacing:-.016em;line-height:1.38}
-        .setup-heading .accordion-trigger{width:auto;flex-shrink:0}
-        .setup-heading .accordion-trigger::before{content:"";position:absolute;inset:0}
-        .setup-heading .accordion-icon{position:absolute;right:0}
+        .setup-heading{--word-gap:.25em}
+        .setup-heading .accordion-title{flex:none;min-height:0}
         .setup-category{position:relative;display:flex;align-items:center;min-width:0;width:calc(var(--category-width,0px) + var(--word-gap));min-height:28px;overflow:hidden;padding:0;border:0;background:none;color:var(--text);font:inherit;letter-spacing:inherit;cursor:pointer;transition:width .35s cubic-bezier(.37,0,.3,1),opacity var(--accordion-fade),visibility var(--accordion-fade)}
         .accordion:not(.open) .setup-category{width:var(--word-gap);opacity:0;visibility:hidden;pointer-events:none}
         .setup-category:disabled{pointer-events:none}
@@ -147,7 +147,7 @@
             .accordion-trigger,.setup-category,.feed-post-toggle,.feed-close{-webkit-tap-highlight-color:transparent}
         }
         @media (hover:hover){
-            .accordion-trigger:hover,.setup-heading .accordion-trigger:hover ~ .setup-suffix{opacity:.7}
+            .accordion-trigger:hover,.accordion-trigger:hover ~ .accordion-title,.accordion-trigger:hover ~ .setup-suffix{opacity:.7}
             .setup-category:hover .setup-category-label{color:rgba(0,0,0,.5)}
             .feed-post-toggle:hover{color:#000}
             .feed-close:hover{opacity:.5}
@@ -163,7 +163,7 @@
             .bio p{font-size:17px;font-weight:400;letter-spacing:-.016em;line-height:1.38em;color:var(--text-body);max-width:40ch;margin-bottom:15px}
             .accordions{margin-top:0}
             .accordions:has(> .accordion.open:last-child){margin-bottom:var(--section-gap)}
-            .accordion-trigger{padding:16px 0}
+            .accordion-title{margin-block:16px}
             .accordion-inner{padding-bottom:18px;font-size:14px;line-height:1.42em}
             .thoughts-list{gap:11px}
             .footer{display:none!important}
@@ -179,6 +179,11 @@
             .feed-article-gallery figure{grid-column:1}
             .feed-post-gallery{margin-left:-24px;margin-right:-24px}
             .feed-post-gallery-track{padding:0 24px;scroll-padding-left:24px}
+        }
+        @media (max-width:1100px) and (any-pointer:coarse){
+            .accordion-trigger{inset:50% -10px auto auto;width:44px;height:44px;justify-content:center;transform:translateY(-50%)}
+            .feed-window{transition:none}
+            .feed-close{width:44px;height:44px;margin-right:-10px}
         }
     </style>
 
@@ -224,10 +229,12 @@
 
         <section class="accordions fade-up delay-6">
             <div class="accordion">
-                <button class="accordion-trigger" aria-expanded="false" aria-controls="accordion-mind">
-                    <span>What's on my mind</span>
-                    <span class="accordion-icon" aria-hidden="true">+</span>
-                </button>
+                <div class="accordion-heading">
+                    <button class="accordion-trigger" aria-labelledby="mind-title" aria-expanded="false" aria-controls="accordion-mind">
+                        <span class="accordion-icon" aria-hidden="true">+</span>
+                    </button>
+                    <span class="accordion-title" id="mind-title">What's on my mind</span>
+                </div>
                 <div class="accordion-content" id="accordion-mind" role="region" aria-label="What's on my mind">
                     <div class="accordion-inner">
                         <ul class="thoughts-list"><!-- cms:thoughts -->
@@ -249,10 +256,12 @@
             </div>
 
             <div class="accordion">
-                <button class="accordion-trigger" aria-expanded="false" aria-controls="accordion-hobbies">
-                    <span>Hobbies and interests</span>
-                    <span class="accordion-icon" aria-hidden="true">+</span>
-                </button>
+                <div class="accordion-heading">
+                    <button class="accordion-trigger" aria-labelledby="hobbies-title" aria-expanded="false" aria-controls="accordion-hobbies">
+                        <span class="accordion-icon" aria-hidden="true">+</span>
+                    </button>
+                    <span class="accordion-title" id="hobbies-title">Hobbies and interests</span>
+                </div>
                 <div class="accordion-content" id="accordion-hobbies" role="region" aria-label="Hobbies and interests">
                     <div class="accordion-inner">
                         <div class="tag-list"><!-- cms:hobbies -->
@@ -268,11 +277,11 @@
             </div>
 
             <div class="accordion">
-                <div class="setup-heading">
+                <div class="accordion-heading setup-heading">
                     <button class="accordion-trigger" aria-label="My setup" aria-expanded="false" aria-controls="accordion-setup">
-                        <span>My</span>
                         <span class="accordion-icon" aria-hidden="true">+</span>
                     </button>
+                    <span class="accordion-title" aria-hidden="true">My</span>
                     <button class="setup-category" type="button" aria-controls="accordion-setup" data-sound="expand" disabled>
                         <span class="setup-category-label"></span>
                     </button>
@@ -358,7 +367,7 @@
     </section>
 
     <script src="/src/sounds.js" defer></script>
-    <script src="src/main.js?v=20261126-7" defer></script>
+    <script src="src/main.js?v=20261126-8" defer></script>
     <script>
         // Defer analytics until after load + idle to keep the main thread clear for LCP/TBT.
         (function(){
