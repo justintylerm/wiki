@@ -181,7 +181,8 @@
             .feed-post-gallery-track{padding:0 24px;scroll-padding-left:24px}
         }
         @media (max-width:1100px) and (any-pointer:coarse){
-            .accordion-trigger{inset:50% -10px auto auto;width:44px;height:44px;justify-content:center;transform:translateY(-50%)}
+            /* Expand the category's touch target without moving the surrounding words. */
+            .setup-category{align-self:stretch;box-sizing:content-box;border-inline:8px solid transparent;margin-inline:-8px;touch-action:manipulation}
             .feed-window{transition:none}
             .feed-close{width:44px;height:44px;margin-right:-10px}
         }
@@ -367,7 +368,7 @@
     </section>
 
     <script src="/src/sounds.js" defer></script>
-    <script src="src/main.js?v=20261126-8" defer></script>
+    <script src="src/main.js?v=20261126-9" defer></script>
     <script>
         // Defer analytics until after load + idle to keep the main thread clear for LCP/TBT.
         (function(){

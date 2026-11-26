@@ -1,6 +1,7 @@
 const nowPlaying = document.getElementById('now-playing');
         const fadeUpElements = Array.from(document.querySelectorAll('.fade-up'));
         const mobileBreakpoint = window.matchMedia('(max-width: 1100px)');
+        const coarsePointer = window.matchMedia('(any-pointer: coarse)');
         const accordions = document.querySelector('.accordions');
         const nowPlayingSafeGap = 100;
 
@@ -45,6 +46,7 @@ const nowPlaying = document.getElementById('now-playing');
 
         const setupContent = document.getElementById('accordion-setup');
         const setupCategory = document.querySelector('.setup-category');
+        let lastCategoryTapWidth = 0;
         const setupItems = setupContent?.querySelector('.accordion-inner');
         const loadouts = Array.from(setupContent?.querySelectorAll('[data-category]') ?? []);
         if (setupContent && !loadouts.length) setupContent.closest('.accordion').hidden = true;
@@ -53,6 +55,15 @@ const nowPlaying = document.getElementById('now-playing');
             if (setupItems && !setupContent.inert) {
                 setupContent.style.height = setupItems.getBoundingClientRect().height + 'px';
             }
+        }
+
+        // During a shrink, a second tap can land where the category was a moment ago.
+        function tappedRecedingCategory(event) {
+            if (!lastCategoryTapWidth || !event.detail || !mobileBreakpoint.matches || !coarsePointer.matches) return false;
+            const box = setupCategory.getBoundingClientRect();
+            return event.clientX >= box.right && event.clientX < box.left + lastCategoryTapWidth
+                && event.clientY >= box.top && event.clientY < box.bottom
+                && setupCategory.getAnimations().some(animation => animation.transitionProperty === 'width');
         }
 
         if (setupCategory && loadouts.length) {
@@ -78,7 +89,8 @@ const nowPlaying = document.getElementById('now-playing');
             }
 
             showSetupCategory();
-            setupCategory.addEventListener('click', () => {
+            setupCategory.addEventListener('click', (event) => {
+                if (event.detail) lastCategoryTapWidth = setupCategory.getBoundingClientRect().width;
                 selectedLoadout = (selectedLoadout + 1) % loadouts.length;
                 showSetupCategory();
                 fitOpenSetup();
@@ -91,7 +103,7 @@ const nowPlaying = document.getElementById('now-playing');
         }
 
         document.querySelectorAll('.accordion-trigger').forEach(trigger => {
-            trigger.addEventListener('click', () => {
+            trigger.addEventListener('click', (event) => {
                 if (trigger.getAttribute('aria-controls') === 'accordion-mind') {
                     if (trigger.getAttribute('aria-expanded') === 'true') closeFeed();
                     else openFeed(trigger);
@@ -103,6 +115,11 @@ const nowPlaying = document.getElementById('now-playing');
                 const isOpen = accordion.classList.contains('open');
 
                 if (content === setupContent && setupCategory) {
+                    if (isOpen && tappedRecedingCategory(event)) {
+                        setupCategory.click();
+                        return;
+                    }
+                    lastCategoryTapWidth = 0;
                     setupContent.inert = isOpen;
                     setupCategory.disabled = isOpen || loadouts.length < 2;
                     if (isOpen) setupContent.style.height = '0px';
@@ -221,7 +238,7 @@ const nowPlaying = document.getElementById('now-playing');
             document.body.classList.remove('feed-open');
             document.removeEventListener('keydown', onFeedKeydown);
             clearTimeout(feedHideTimer);
-            if (mobileBreakpoint.matches && window.matchMedia('(any-pointer: coarse)').matches) {
+            if (mobileBreakpoint.matches && coarsePointer.matches) {
                 feedWindow.hidden = true;
             } else {
                 feedHideTimer = setTimeout(() => {
