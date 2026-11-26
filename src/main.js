@@ -92,11 +92,9 @@ const nowPlaying = document.getElementById('now-playing');
 
         document.querySelectorAll('.accordion-trigger').forEach(trigger => {
             trigger.addEventListener('click', () => {
-                // "What's on my mind" opens the floating feed on desktop. On mobile,
-                // the same content remains available through the compact accordion.
                 if (trigger.getAttribute('aria-controls') === 'accordion-mind') {
-                    if (feedWindow.hidden) openFeed(trigger);
-                    else closeFeed();
+                    if (trigger.getAttribute('aria-expanded') === 'true') closeFeed();
+                    else openFeed(trigger);
                     return;
                 }
 
@@ -207,7 +205,9 @@ const nowPlaying = document.getElementById('now-playing');
             if (feedScroll) feedScroll.scrollTop = 0;
             wakeFeedVideos();
 
-            requestAnimationFrame(() => feedWindow.classList.add('open'));
+            requestAnimationFrame(() => {
+                if (trigger.getAttribute('aria-expanded') === 'true') feedWindow.classList.add('open');
+            });
             document.addEventListener('keydown', onFeedKeydown);
             feedClose.focus();
         }

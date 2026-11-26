@@ -158,11 +158,11 @@
             body,.page-wrapper{min-height:0}
             .page-wrapper{flex-direction:column}
             .photo-column{display:none!important}
-            .page{margin-right:0;padding:24px 24px env(safe-area-inset-bottom,0px);gap:27px;max-width:500px}
+            .page{--section-gap:42px;margin-right:0;padding:24px 24px env(safe-area-inset-bottom,0px);gap:var(--section-gap);max-width:500px}
             .bio-greeting{font-size:36px;line-height:1.2em;letter-spacing:-.032em;margin-bottom:19px}
             .bio p{font-size:17px;font-weight:400;letter-spacing:-.016em;line-height:1.38em;color:var(--text-body);max-width:40ch;margin-bottom:15px}
-            .accordions{margin-top:15px}
-            .accordions:has(> .accordion.open:last-child){margin-bottom:8px}
+            .accordions{margin-top:0}
+            .accordions:has(> .accordion.open:last-child){margin-bottom:var(--section-gap)}
             .accordion-trigger{padding:16px 0}
             .accordion-inner{padding-bottom:18px;font-size:14px;line-height:1.42em}
             .thoughts-list{gap:11px}
@@ -170,8 +170,8 @@
             .footer-mobile{display:none!important}
             .footer-desktop{display:none!important}
             .now-playing{display:none!important}
-            .feed-window{width:100vw;max-width:none;height:100dvh;right:0;top:0;border:0;border-radius:0;box-shadow:none;opacity:0;transform:none;transition:opacity .22s ease}
-            .feed-window.open{opacity:1;transform:none}
+            .feed-window{width:100vw;max-width:none;height:100dvh;right:0;top:0;border:0;border-radius:0;box-shadow:none;opacity:0;transform:none;pointer-events:none;transition:opacity .22s ease}
+            body.feed-open .feed-window{opacity:1;pointer-events:auto;transition:none}
             .feed-items{padding:0 24px 48px}
             .feed-item::after{left:-24px;right:-24px}
             .feed-post-title{font-size:30px}
@@ -358,7 +358,7 @@
     </section>
 
     <script src="/src/sounds.js" defer></script>
-    <script src="src/main.js?v=20261126-6" defer></script>
+    <script src="src/main.js?v=20261126-7" defer></script>
     <script>
         // Defer analytics until after load + idle to keep the main thread clear for LCP/TBT.
         (function(){
