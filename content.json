@@ -30,9 +30,9 @@
     "CleanShot X",
     "Alfred",
     "Figma",
-    "Superwhisper",
     "Claude",
-    "Codex"
+    "Codex",
+    "Plott"
   ],
   "setupCategories": [
     {
@@ -41,32 +41,34 @@
         "CleanShot X",
         "Alfred",
         "Figma",
-        "Superwhisper",
         "Claude",
-        "Codex"
+        "Codex",
+        "Plott"
       ]
     },
     {
       "label": "desk",
       "items": [
-        "Mechanical keyboard",
-        "Trackpad",
-        "Monitor arm",
-        "Desk lamp",
-        "USB-C dock",
-        "Studio headphones"
+        "NuPhy Air75 V3",
+        "Logitech MX Master 2S",
+        "Macbook Pro",
+        "XTEINK X4",
+        "Audio-Technica ATH-M50x",
+        "Vanilla Musk Candle"
       ]
     },
     {
       "label": "every day carry",
       "items": [
-        "Pocket notebook",
-        "Gel pen",
-        "Slim wallet",
-        "Key organizer"
+        "Victorinox Mini Champ Alox",
+        "RovyVon Aurora A8",
+        "Muji Gel Pen 0.5mm",
+        "Pilot Dr. Grip ACE 0.5mm",
+        "Craighill Wilson Keyring",
+        "Bellroy Classic Backpack"
       ]
     }
   ],
   "photoCaption": "Ollie and I, 2025",
-  "lastUpdated": "11-01-26"
+  "lastUpdated": "11-26-26"
 }
