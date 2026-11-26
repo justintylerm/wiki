@@ -28,10 +28,10 @@
   ],
   "setup": [
     "CleanShot X",
-    "Alfred",
     "Figma",
-    "Claude",
+    "Claude Code",
     "Codex",
+    "Alfred",
     "Plott"
   ],
   "setupCategories": [
@@ -39,33 +39,33 @@
       "label": "software",
       "items": [
         "CleanShot X",
-        "Alfred",
         "Figma",
-        "Claude",
+        "Claude Code",
         "Codex",
+        "Alfred",
         "Plott"
       ]
     },
     {
       "label": "desk",
       "items": [
-        "NuPhy Air75 V3",
         "Logitech MX Master 2S",
-        "Macbook Pro",
-        "XTEINK X4",
         "Audio-Technica ATH-M50x",
-        "Vanilla Musk Candle"
+        "NuPhy Air75 V3",
+        "Vanilla Musk Candle",
+        "Macbook Pro",
+        "XTEINK X4"
       ]
     },
     {
       "label": "every day carry",
       "items": [
         "Victorinox Mini Champ Alox",
-        "RovyVon Aurora A8",
-        "Muji Gel Pen 0.5mm",
+        "Bellroy Classic Backpack",
         "Pilot Dr. Grip ACE 0.5mm",
         "Craighill Wilson Keyring",
-        "Bellroy Classic Backpack"
+        "Muji Gel Pen 0.5mm",
+        "RovyVon Aurora A8"
       ]
     }
   ],
