@@ -158,7 +158,6 @@ const nowPlaying = document.getElementById('now-playing');
 
         function handleBreakpointChange() {
             const isMobile = mobileBreakpoint.matches;
-            if (!isMobile || !coarsePointer.matches) finishFeedLoading?.();
             if (isMobile !== wasMobile) {
                 restartFadeUps();
                 if (isMobile) {
@@ -179,7 +178,7 @@ const nowPlaying = document.getElementById('now-playing');
         const feedClose = document.getElementById('feed-close');
         const feedScroll = document.getElementById('feed-scroll');
         const feedLoader = document.getElementById('feed-loader');
-        let finishFeedLoading = null;
+        let cancelFeedLoading = null;
         let feedReturnFocus = null;
         let feedHideTimer = null;
 
@@ -235,7 +234,16 @@ const nowPlaying = document.getElementById('now-playing');
             }
         }
 
-        function prepareMobileFeed() {
+        function clearFeedLoader() {
+            feedScroll.inert = false;
+            feedScroll.removeAttribute('aria-busy');
+            feedLoader.hidden = true;
+        }
+
+        function prepareFeed() {
+            // A quick reopen can interrupt a slide-out with the loading cover still in place.
+            cancelFeedLoading?.();
+            clearFeedLoader();
             const viewport = feedScroll.getBoundingClientRect();
             const pending = new Set(Array.from(feedScroll.querySelectorAll('img, video[data-src], iframe.feed-youtube')).filter(media => {
                 const box = media.getBoundingClientRect();
@@ -251,13 +259,8 @@ const nowPlaying = document.getElementById('now-playing');
 
             function reveal() {
                 if (controller.signal.aborted) return;
-                controller.abort();
-                clearTimeout(minimum);
-                clearTimeout(deadline);
-                feedScroll.inert = false;
-                feedScroll.removeAttribute('aria-busy');
-                feedLoader.hidden = true;
-                finishFeedLoading = null;
+                cancelFeedLoading();
+                clearFeedLoader();
             }
             // Give fast opens one brief, steady indicator while slower media loads in parallel.
             const minimum = setTimeout(() => {
@@ -266,7 +269,12 @@ const nowPlaying = document.getElementById('now-playing');
             }, 550);
             // Stalled media must not hold the rest of the feed indefinitely.
             const deadline = setTimeout(reveal, 4000);
-            finishFeedLoading = reveal;
+            cancelFeedLoading = () => {
+                controller.abort();
+                clearTimeout(minimum);
+                clearTimeout(deadline);
+                cancelFeedLoading = null;
+            };
 
             for (const media of pending) {
                 const ready = () => {
@@ -357,13 +365,11 @@ const nowPlaying = document.getElementById('now-playing');
             feedWindow.hidden = false;
             if (feedScroll) feedScroll.scrollTop = 0;
             syncFeedYouTube();
-            if (mobileBreakpoint.matches && coarsePointer.matches) {
-                if (linkedPost) {
-                    setPostExpanded(linkedPost, true, { updateUrl: false, sound: false });
-                    feedScroll.scrollTop = Math.max(0, linkedPost.offsetTop - 18);
-                }
-                prepareMobileFeed();
+            if (linkedPost) {
+                setPostExpanded(linkedPost, true, { updateUrl: false, sound: false });
+                feedScroll.scrollTop = Math.max(0, linkedPost.offsetTop - 18);
             }
+            prepareFeed();
             wakeFeedVideos();
 
             requestAnimationFrame(() => {
@@ -375,7 +381,7 @@ const nowPlaying = document.getElementById('now-playing');
 
         function closeFeed() {
             if (!feedWindow || feedWindow.hidden) return;
-            finishFeedLoading?.();
+            cancelFeedLoading?.();
             closeExpandedPosts(true);
             sleepFeedVideos();
             if (window.uiSound) window.uiSound.play('slide');
@@ -383,11 +389,15 @@ const nowPlaying = document.getElementById('now-playing');
             document.body.classList.remove('feed-open');
             document.removeEventListener('keydown', onFeedKeydown);
             clearTimeout(feedHideTimer);
-            if (mobileBreakpoint.matches && coarsePointer.matches) {
+            function hideFeed() {
                 feedWindow.hidden = true;
+                clearFeedLoader();
+            }
+            if (mobileBreakpoint.matches && coarsePointer.matches) {
+                hideFeed();
             } else {
                 feedHideTimer = setTimeout(() => {
-                    if (!feedWindow.classList.contains('open')) feedWindow.hidden = true;
+                    if (!feedWindow.classList.contains('open')) hideFeed();
                 }, 420);
             }
 
@@ -444,17 +454,11 @@ const nowPlaying = document.getElementById('now-playing');
                 window.uiSound.play(expanded ? 'expand' : 'collapse');
             }
             if (opts.updateUrl !== false) updatePostUrl(expanded ? article.dataset.postSlug : '');
-
-            if (expanded && opts.scroll === true && feedScroll) {
-                setTimeout(() => {
-                    feedScroll.scrollTo({ top: Math.max(0, article.offsetTop - 18), behavior: 'smooth' });
-                }, 80);
-            }
         }
 
         function closeExpandedPosts(updateUrl) {
             document.querySelectorAll('.feed-item--post.is-expanded').forEach((article) => {
-                setPostExpanded(article, false, { updateUrl: false, sound: false, scroll: false });
+                setPostExpanded(article, false, { updateUrl: false, sound: false });
             });
             if (updateUrl) updatePostUrl('');
         }
@@ -656,12 +660,6 @@ const nowPlaying = document.getElementById('now-playing');
             const article = slug && Array.from(document.querySelectorAll('.feed-item--post'))
                 .find((item) => item.dataset.postSlug === slug);
             openFeed(trigger, article);
-            if (!article || (mobileBreakpoint.matches && coarsePointer.matches)) return;
-            setTimeout(() => setPostExpanded(article, true, {
-                updateUrl: false,
-                sound: false,
-                scroll: true
-            }), 340);
         }
 
         if (!appWindow) openFeedFromUrl();

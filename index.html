@@ -95,6 +95,10 @@
         .feed-close{width:24px;height:24px;padding:0;border:0;background:none;color:var(--text-body);font-family:inherit;font-size:20px;font-weight:300;line-height:1;cursor:pointer;transition:opacity .2s ease}
         .feed-scroll{min-height:0;overflow-y:auto;overscroll-behavior:contain;-ms-overflow-style:none;scrollbar-width:none}
         .feed-scroll::-webkit-scrollbar{display:none}
+        .feed-scroll[aria-busy="true"]{opacity:0}
+        .feed-loader:not([hidden]){position:absolute;z-index:1;inset:var(--feed-bar-height) 0 0;display:grid;place-items:center;background:var(--bg)}
+        .feed-loader::after{content:"";width:18px;height:18px;border:1.5px solid var(--border);border-top-color:var(--text-body);border-radius:50%;animation:feed-loader-spin .8s linear infinite}
+        .feed-loader span{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
         .feed-items{padding:0 48px 70px}
         .feed-item{position:relative;padding:42px 0}
         .feed-item::after{content:"";position:absolute;left:-48px;right:-48px;bottom:0;height:1px;background:rgba(0,0,0,.08)}
@@ -212,10 +216,6 @@
             .setup-category{align-self:stretch;box-sizing:content-box;border-inline:8px solid transparent;margin-inline:-8px;touch-action:manipulation}
             .feed-window{transition:none}
             .feed-close{width:44px;height:44px;margin-right:-10px}
-            .feed-scroll[aria-busy="true"]{opacity:0}
-            .feed-loader:not([hidden]){position:absolute;z-index:1;inset:var(--feed-bar-height) 0 0;display:grid;place-items:center;background:var(--bg)}
-            .feed-loader::after{content:"";width:18px;height:18px;border:1.5px solid var(--border);border-top-color:var(--text-body);border-radius:50%;animation:feed-loader-spin .8s linear infinite}
-            .feed-loader span{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
         }
         @keyframes feed-loader-spin{to{transform:rotate(1turn)}}
         @media (prefers-reduced-motion:reduce){
@@ -406,7 +406,7 @@
     <!-- cms:app-page --><!-- /cms:app-page -->
 
     <script src="/src/sounds.js" defer></script>
-    <script src="src/main.js?v=20261127-5" defer></script>
+    <script src="src/main.js?v=20261127-6" defer></script>
     <script>
         // Defer analytics until after load + idle to keep the main thread clear for LCP/TBT.
         (function(){
