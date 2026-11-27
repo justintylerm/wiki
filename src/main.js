@@ -172,6 +172,50 @@ const nowPlaying = document.getElementById('now-playing');
 
         const youtubePlayers = feedWindow?.querySelectorAll('iframe.feed-youtube') || [];
 
+        for (const frame of youtubePlayers) {
+            const preview = frame.parentElement.querySelector('.feed-youtube-preview');
+            preview?.addEventListener('click', () => {
+                const source = new URL(frame.dataset.src);
+                source.searchParams.set('autoplay', '1');
+                frame.loading = 'eager';
+                frame.hidden = false;
+                frame.src = source.href;
+                preview.hidden = true;
+                frame.focus({ preventScroll: true });
+            });
+        }
+
+        function syncFeedYouTube() {
+            if (!document.body.classList.contains('feed-open')) return;
+            const mobile = mobileBreakpoint.matches && coarsePointer.matches;
+            for (const frame of youtubePlayers) {
+                const preview = frame.parentElement.querySelector('.feed-youtube-preview');
+                if (preview) preview.hidden = !mobile;
+                frame.hidden = mobile && Boolean(preview);
+                if (frame.hidden) {
+                    frame.removeAttribute('src');
+                    const image = preview.querySelector('img');
+                    if (!image.hasAttribute('src')) image.src = image.dataset.src;
+                } else if (!frame.hasAttribute('src')) {
+                    frame.src = frame.dataset.src;
+                }
+            }
+        }
+        mobileBreakpoint.addEventListener('change', syncFeedYouTube);
+        coarsePointer.addEventListener('change', syncFeedYouTube);
+
+        for (const video of feedVideos) {
+            const showFrame = () => {
+                if (video.videoWidth && video.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA) {
+                    video.classList.add('has-frame');
+                }
+            };
+            for (const event of ['loadeddata', 'canplay', 'playing']) video.addEventListener(event, showFrame);
+            for (const event of ['waiting', 'error', 'emptied']) {
+                video.addEventListener(event, () => video.classList.remove('has-frame'));
+            }
+        }
+
         function prepareMobileFeed() {
             const viewport = feedScroll.getBoundingClientRect();
             const pending = new Set(Array.from(feedScroll.querySelectorAll('img, video[data-src], iframe.feed-youtube')).filter(media => {
@@ -179,10 +223,9 @@ const nowPlaying = document.getElementById('now-playing');
                 return !media.closest('[inert]') && box.width > 0 && box.bottom > viewport.top &&
                     box.top < viewport.bottom && box.right > viewport.left && box.left < viewport.right;
             }));
-            if (!pending.size) return;
-
             const controller = new AbortController();
             const options = { signal: controller.signal };
+            let minimumElapsed = false;
             feedScroll.inert = true;
             feedScroll.setAttribute('aria-busy', 'true');
             feedLoader.hidden = false;
@@ -190,20 +233,26 @@ const nowPlaying = document.getElementById('now-playing');
             function reveal() {
                 if (controller.signal.aborted) return;
                 controller.abort();
+                clearTimeout(minimum);
                 clearTimeout(deadline);
                 feedScroll.inert = false;
                 feedScroll.removeAttribute('aria-busy');
                 feedLoader.hidden = true;
                 finishFeedLoading = null;
             }
-            // A stalled third-party embed must not hold the rest of the feed indefinitely.
+            // Give fast opens one brief, steady indicator while slower media loads in parallel.
+            const minimum = setTimeout(() => {
+                minimumElapsed = true;
+                if (!pending.size) reveal();
+            }, 550);
+            // Stalled media must not hold the rest of the feed indefinitely.
             const deadline = setTimeout(reveal, 4000);
             finishFeedLoading = reveal;
 
             for (const media of pending) {
                 const ready = () => {
                     pending.delete(media);
-                    if (!pending.size) reveal();
+                    if (minimumElapsed && !pending.size) reveal();
                 };
                 if (media instanceof HTMLImageElement) {
                     media.loading = 'eager';
@@ -238,9 +287,6 @@ const nowPlaying = document.getElementById('now-playing');
         }
 
         function wakeFeedVideos() {
-            youtubePlayers.forEach((frame) => {
-                if (!frame.hasAttribute('src')) frame.src = frame.dataset.src;
-            });
             if (!feedVideos.length) return;
             if (!feedVideoObserver) {
                 feedVideoObserver = new IntersectionObserver((entries) => {
@@ -257,9 +303,13 @@ const nowPlaying = document.getElementById('now-playing');
             if (document.fullscreenElement && feedWindow.contains(document.fullscreenElement)) {
                 document.exitFullscreen().catch(() => {});
             }
-            youtubePlayers.forEach((frame) => frame.removeAttribute('src'));
+            youtubePlayers.forEach((frame) => {
+                frame.removeAttribute('src');
+                frame.loading = 'lazy';
+            });
             if (feedVideoObserver) feedVideoObserver.disconnect();
             feedVideos.forEach((video) => {
+                video.classList.remove('has-frame');
                 video.pause();
                 if (video.getAttribute('src')) {
                     video.removeAttribute('src');
@@ -279,6 +329,7 @@ const nowPlaying = document.getElementById('now-playing');
 
             feedWindow.hidden = false;
             if (feedScroll) feedScroll.scrollTop = 0;
+            syncFeedYouTube();
             if (mobileBreakpoint.matches && coarsePointer.matches) {
                 if (linkedPost) {
                     setPostExpanded(linkedPost, true, { updateUrl: false, sound: false });

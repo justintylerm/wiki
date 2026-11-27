@@ -105,7 +105,10 @@ const renderPostMedia = (post) => {
         const title = escapeHtml(post.youtubeTitle || statusText || 'YouTube video');
         return `
                     <figure class="feed-post-media">
-                        <iframe class="feed-youtube" data-src="https://www.youtube-nocookie.com/embed/${youtubeId}?autoplay=0&amp;controls=1&amp;playsinline=1" title="${title}" loading="lazy" referrerpolicy="strict-origin-when-cross-origin" allow="encrypted-media; fullscreen; picture-in-picture" allowfullscreen></iframe>
+                        <button class="feed-youtube-preview" type="button" aria-label="Play ${title}" hidden>
+                            <img data-src="https://i.ytimg.com/vi/${youtubeId}/hqdefault.jpg" loading="lazy" decoding="async" alt="">
+                        </button>
+                        <iframe class="feed-youtube" data-src="https://www.youtube-nocookie.com/embed/${youtubeId}?autoplay=0&amp;controls=1&amp;playsinline=1" title="${title}" loading="lazy" referrerpolicy="strict-origin-when-cross-origin" allow="autoplay; encrypted-media; fullscreen; picture-in-picture" allowfullscreen></iframe>
                     </figure>`;
     }
     const videoSrc = assetHref(post.video);
