@@ -40,7 +40,9 @@
         .setup-items{grid-column:1/-1;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px 16px}
         .setup-items:empty{display:none}
         .setup-items>.item{display:grid;gap:2px;margin:0}
-        .setup-items .item-btns{justify-content:flex-start}
+        .setup-items .item-btns{justify-content:flex-start;align-items:center;flex-wrap:wrap}
+        .setup-page{margin-left:4px}
+        .setup-category:not(.is-software) .setup-page{display:none}
         .setup-category>.add{grid-column:1/-1;justify-self:start}
         .bar{position:fixed;bottom:0;left:0;right:0;background:rgba(255,255,255,.92);backdrop-filter:blur(8px);border-top:1px solid var(--border-soft);padding:14px 24px calc(14px + env(safe-area-inset-bottom))}
         .bar-inner{max-width:640px;margin:0 auto;display:flex;align-items:center;gap:14px}
@@ -109,6 +111,7 @@
         .gate input{margin-bottom:12px}
         .gate .publish{width:100%;text-align:center}
         .gate .err-msg{color:#c0392b;font-size:13px;margin-top:12px}
+        .preview-apps{display:block;margin:20px auto;text-align:center}
         .hidden{display:none!important}
         code{font-size:12.5px;background:rgba(0,0,0,.05);padding:1px 5px;border-radius:4px}
         @media(max-width:560px){.update-row{grid-template-columns:48px minmax(0,1fr)}.update-row-meta{grid-column:2}.update-actions{flex-wrap:wrap}}
@@ -134,6 +137,8 @@
     <button class="publish" id="setupGo">Save &amp; continue</button>
     <div class="err-msg hidden" id="setupErr"></div>
 </div>
+
+<a class="link-btn preview-apps hidden" id="previewApps" href="./apps.html">Edit local app pages</a>
 
 <!-- ============ EDITOR ============ -->
 <div class="wrap hidden" id="editor">
@@ -258,6 +263,7 @@
 </div>
 
 <script src="../src/youtube.js"></script>
+<script src="../src/setup.js"></script>
 <script>
 (function () {
     const OWNER = 'justintylerm', REPO = 'wiki', BRANCH = 'main', FILE = 'content.json';
@@ -388,6 +394,10 @@
         ]);
         row.classList.add('tagrow');
     };
+    function appEditorHref(itemName) {
+        return itemName ? './apps.html?' + new URLSearchParams({setupItem: itemName}) : './apps.html';
+    }
+
     function addSetupCategory(category = { label: '', items: [] }) {
         const name = makeInput(category.label, 'Category name', 'setup-name');
         name.setAttribute('aria-label', 'Category name');
@@ -396,7 +406,22 @@
         function addItem(value) {
             const input = makeInput(value, 'Item name');
             input.setAttribute('aria-label', 'Item name');
-            itemRow(list, [input], 'item');
+            const item = itemRow(list, [input], 'item');
+            const page = document.createElement('a');
+            page.className = 'link-btn setup-page';
+            page.textContent = 'App page ↗';
+            // A separate tab keeps unpublished homepage edits available while drafting the page.
+            page.target = '_blank';
+            page.rel = 'noopener';
+            function syncPageLink() {
+                const label = input.value.trim();
+                page.hidden = !label;
+                page.href = appEditorHref(label);
+                page.setAttribute('aria-label', 'Create or edit the ' + label + ' app page (opens in a new tab)');
+            }
+            syncPageLink();
+            input.addEventListener('input', syncPageLink);
+            item.querySelector('.item-btns').appendChild(page);
             return input;
         }
         category.items.forEach(addItem);
@@ -408,6 +433,9 @@
         const row = itemRow($('setupList'), [name], 'category');
         row.classList.add('setup-category');
         row.append(list, add);
+        const syncCategory = () => row.classList.toggle('is-software', name.value.trim().toLowerCase() === 'software');
+        syncCategory();
+        name.addEventListener('input', syncCategory);
         return name;
     }
 
@@ -447,13 +475,18 @@
     $('greeting').addEventListener('input', () => { autosize($('greeting')); markDirty(); });
     $('caption').addEventListener('input', markDirty);
 
-    async function load() {
-        setStatus('Loading…');
+    async function readHomepage() {
         const res = await gh(`/contents/${FILE}?ref=${BRANCH}&t=${Date.now()}`);
         if (!res.ok) throw new Error('load failed (' + res.status + ')');
         const data = await res.json();
-        sha = data.sha;
-        loadedContent = JSON.parse(b64decode(data.content));
+        return {sha: data.sha, content: JSON.parse(b64decode(data.content))};
+    }
+
+    async function load() {
+        setStatus('Loading…');
+        const latest = await readHomepage();
+        sha = latest.sha;
+        loadedContent = latest.content;
         render(loadedContent);
     }
 
@@ -521,10 +554,21 @@
             const body = {
                 message: 'Update wiki content via admin',
                 content: b64encode(JSON.stringify(content, null, 2) + '\n'),
-                branch: BRANCH,
-                sha
+                branch: BRANCH
             };
-            const res = await gh(`/contents/${FILE}`, { method: 'PUT', body: JSON.stringify(body) });
+            const write = revision => gh(`/contents/${FILE}`, { method: 'PUT', body: JSON.stringify({...body, sha: revision}) });
+            let res = await write(sha);
+            if (res.status === 409) {
+                // An app opened from this draft can publish its new software row in a separate tab.
+                // Retry only when those rows are the entire remote change and the draft keeps them all.
+                const latest = await readHomepage();
+                const software = WikiSetup.setupCategories(loadedContent).find(category => category.label.trim().toLowerCase() === 'software');
+                const additions = (latest.content.setup || []).slice(software?.items.length || 0);
+                if (additions.length && additions.every(label => content.setup.includes(label))
+                    && JSON.stringify(latest.content) === JSON.stringify(WikiSetup.withSoftwareItems(loadedContent, additions))) {
+                    res = await write(latest.sha);
+                }
+            }
             if (res.status === 409) throw new Error('The homepage changed on GitHub. Copy your edits, then reload the latest version before publishing.');
             if (!res.ok) throw new Error('publish failed (' + res.status + ')');
             const result = await res.json();
@@ -584,6 +628,7 @@
         };
         mk('Homepage', switchToHome, { active: mode === 'home' });
         mk("What's on my mind", switchToUpdates, { active: mode !== 'home' });
+        mk('Apps', () => location.assign('./apps.html'));
     }
 
     const guardDirty = () => !dirty || confirm('You have unpublished changes. Discard them?');
@@ -1377,6 +1422,7 @@
     const show = (el) => {
         [gate, setupEl, editor].forEach((x) => x.classList.add('hidden'));
         el.classList.remove('hidden');
+        $('previewApps').classList.toggle('hidden', el === editor || !['localhost', '127.0.0.1', '[::1]'].includes(location.hostname));
     };
 
     const bufToB64 = (buf) => {
@@ -1422,6 +1468,11 @@
     }
 
     async function start() {
+        const destination = new URLSearchParams(location.search);
+        if (destination.get('view') === 'apps' && token) {
+            location.replace(appEditorHref(destination.get('setupItem')));
+            return;
+        }
         show(editor);
         mode = 'home';
         editingIndex = -1;

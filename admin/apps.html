@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="robots" content="noindex, nofollow">
+    <title>App pages · justinmartin.wiki</title>
+    <link rel="icon" href="../assets/png-354cc08a9867.png">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500&display=swap">
+    <style>
+        * { box-sizing: border-box; }
+        :root { --ink: #111; --muted: #626262; --line: #ddd; }
+        body { margin: 0; color: var(--ink); background: #fff; font: 15px/1.45 Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; letter-spacing: -.015em; -webkit-font-smoothing: antialiased; }
+        main { max-width: 640px; margin: 0 auto; padding: 42px 24px 125px; }
+        h1, h2 { font-weight: 400; line-height: 1.2; }
+        h1 { margin: 24px 0 20px; font-size: 26px; letter-spacing: -.035em; }
+        h2 { margin: 0 0 12px; font-size: 19px; letter-spacing: -.025em; }
+        a { color: inherit; text-underline-offset: .18em; }
+        .quiet, .hint { color: var(--muted); font-size: 13px; }
+        button, input, select, textarea { font: inherit; color: inherit; }
+        button { cursor: pointer; }
+        button:disabled { cursor: default; opacity: .4; }
+        :focus-visible { outline: 2px solid currentColor; outline-offset: 2px; }
+        input, select, textarea { display: block; width: 100%; margin: 5px 0 0; padding: 10px 12px; background: #fff; border: 1px solid var(--line); border-radius: 8px; }
+        textarea { resize: vertical; }
+        label { display: block; font-size: 13px; color: var(--muted); }
+        label :is(input, textarea, select) { font-size: max(16px, 1em); color: var(--ink); }
+        .select-page, .pair, .tools, .bar-inner { display: flex; gap: 12px; }
+        .select-page { align-items: end; padding-bottom: 22px; border-bottom: 1px solid var(--line); }
+        .select-page label, .pair label { flex: 1; min-width: 0; }
+        .secondary { padding: 10px 14px; border: 1px solid var(--line); border-radius: 8px; background: #fff; font-size: 14px; }
+        .secondary:hover { border-color: #999; }
+        fieldset { border: 0; padding: 0; margin: 0; min-width: 0; }
+        .fields { display: grid; gap: 15px; margin-top: 22px; }
+        .gallery { border-top: 1px solid var(--line); margin-top: 24px; padding-top: 22px; }
+        .gallery .hint { margin: -5px 0 12px; }
+        #slides { list-style: none; padding: 0; margin: 0; }
+        #slides li { display: grid; grid-template-columns: 112px minmax(0,1fr); gap: 16px; border-top: 1px solid #eee; padding: 14px 0; }
+        #slides :is(img, video) { display: block; width: 100%; aspect-ratio: 4/3; object-fit: cover; border-radius: 8px; background: #f4f4f4; }
+        .tools { align-items: center; flex-wrap: wrap; gap: 12px; margin-top: 7px; }
+        .text-button { border: 0; padding: 4px 0; background: none; color: var(--muted); font-size: 13px; text-decoration: underline; text-underline-offset: 3px; }
+        .page-actions { display: flex; justify-content: space-between; align-items: center; margin-top: 30px; }
+        .bar { position: fixed; bottom: 0; inset-inline: 0; background: rgba(255,255,255,.97); border-top: 1px solid var(--line); padding-bottom: env(safe-area-inset-bottom); }
+        .bar-inner { align-items: center; max-width: 640px; padding: 12px 24px; margin: auto; }
+        #status { flex: 1; line-height: 1.3; }
+        #status.error { color: #9e382b; }
+        #save { background: #101010; color: white; border: 0; border-radius: 99px; padding: 11px 22px; white-space: nowrap; }
+        [hidden] { display: none !important; }
+        @media(max-width: 460px) { .pair { flex-direction: column; } #slides li { grid-template-columns: 82px minmax(0,1fr); gap: 10px; } }
+    </style>
+    <script src="../src/setup.js" defer></script>
+    <script src="app-storage.js" defer></script>
+    <script src="apps.js" defer></script>
+</head>
+<body>
+<main>
+    <a href="./" class="quiet">← Admin</a>
+    <h1>App pages</h1>
+    <div class="select-page">
+        <label>Page<select id="page" disabled></select></label>
+        <button type="button" class="secondary" id="newPage" disabled>New page</button>
+    </div>
+    <form id="form" hidden>
+        <fieldset id="fields">
+            <div class="fields">
+                <div class="pair">
+                    <label>App name<input id="name" required></label>
+                    <label>Version<input id="version" placeholder="v1.0.2"></label>
+                </div>
+                <div class="pair">
+                    <label>Page slug<input id="slug" required pattern="[a-z0-9]+(-[a-z0-9]+)*" title="Use lowercase letters, numbers and single hyphens." autocapitalize="none" spellcheck="false"></label>
+                    <label>Link from My setup<select id="setupItem"></select></label>
+                </div>
+                <label id="softwareLabelField" hidden>New software item name<input id="softwareLabel" placeholder="Use the app name"></label>
+                <label>Heading<textarea id="heading" rows="2" required></textarea></label>
+                <div>
+                    <label>Body<textarea id="body" rows="6" aria-describedby="bodyHint"></textarea></label>
+                    <span class="hint" id="bodyHint">Leave a blank line between paragraphs.</span>
+                </div>
+                <div class="pair">
+                    <label>Link text<input id="linkLabel" placeholder="Try it on GitHub"></label>
+                    <label>Link URL<input id="linkUrl" inputmode="url" placeholder="https:// or /path" autocapitalize="none" spellcheck="false"></label>
+                </div>
+            </div>
+            <section class="gallery" aria-labelledby="galleryHeading">
+                <h2 id="galleryHeading">Slideshow</h2>
+                <p class="hint">Slides appear in this order. Upload WebP images or WebM videos.</p>
+                <ol id="slides"></ol>
+                <input type="file" id="files" accept="image/webp,video/webm,.webp,.webm" multiple hidden>
+                <button type="button" class="secondary" id="addMedia">Add visuals</button>
+            </section>
+            <div class="page-actions">
+                <a id="preview" class="quiet" target="_blank" rel="noopener" hidden>View page ↗</a>
+                <button type="button" class="text-button" id="deletePage" hidden>Delete page</button>
+            </div>
+        </fieldset>
+    </form>
+    <div class="bar"><div class="bar-inner">
+        <span id="status" class="quiet" role="status" aria-live="polite">Loading app pages…</span>
+        <button type="submit" form="form" id="save" disabled>Save changes</button>
+    </div></div>
+</main>
+</body>
+</html>

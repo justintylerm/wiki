@@ -1,0 +1,24 @@
+[
+  {
+    "slug": "plott",
+    "name": "Plott",
+    "setupItem": "Plott",
+    "version": "v1.0.2",
+    "heading": "Plott is a note-taking app for moving ideas around.",
+    "body": [
+      "I wanted to put two lists next to each other without opening a second note. In Plott, I can start with a plain Markdown outline, grab a few lines, and drag them into columns. When I’m ready to write again, I can pick up right where I left off. The note is still a Markdown file on my Mac."
+    ],
+    "linkLabel": "Watch the demo",
+    "linkUrl": "/assets/posts/markdown-app-demo.webm",
+    "media": [
+      {
+        "src": "assets/apps/plott-outline.webp",
+        "alt": "Two quarterly goal lists arranged side by side in Plott’s dark editor."
+      },
+      {
+        "src": "assets/posts/markdown-app-demo.webm",
+        "alt": "A screen recording of dragging Markdown list items into a second column in Plott."
+      }
+    ]
+  }
+]

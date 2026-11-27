@@ -50,11 +50,27 @@ const nowPlaying = document.getElementById('now-playing');
         const setupItems = setupContent?.querySelector('.accordion-inner');
         const loadouts = Array.from(setupContent?.querySelectorAll('[data-category]') ?? []);
         if (setupContent && !loadouts.length) setupContent.closest('.accordion').hidden = true;
+        const initialAppWindow = document.getElementById('app-window');
+        // The standalone page and its Close link should both land on the associated setup.
+        const previousPage = document.referrer && new URL(document.referrer);
+        const previousApp = previousPage?.origin === location.origin
+            && previousPage.pathname.match(/^\/apps\/([^/]+)\/?$/)?.[1];
+        const initialApp = initialAppWindow?.dataset.appSlug || previousApp || history.state?.setupApp;
 
         function fitOpenSetup() {
             if (setupItems && !setupContent.inert) {
                 setupContent.style.height = setupItems.getBoundingClientRect().height + 'px';
             }
+        }
+
+        function setSetupOpen(open) {
+            setupContent.inert = !open;
+            setupCategory.disabled = !open || loadouts.length < 2;
+            if (open) fitOpenSetup();
+            else setupContent.style.height = '0px';
+            const accordion = setupContent.closest('.accordion');
+            accordion.classList.toggle('open', open);
+            accordion.querySelector('.accordion-trigger').setAttribute('aria-expanded', String(open));
         }
 
         // During a shrink, a second tap can land where the category was a moment ago.
@@ -68,7 +84,10 @@ const nowPlaying = document.getElementById('now-playing');
 
         if (setupCategory && loadouts.length) {
             const setupLabel = setupCategory.querySelector('.setup-category-label');
-            let selectedLoadout = 0;
+            const initialLink = Array.from(setupContent.querySelectorAll('[data-app-link]'))
+                .find(link => link.dataset.appLink === initialApp);
+            const initialLoadout = loadouts.indexOf(initialLink?.closest('.setup-loadout'));
+            let selectedLoadout = Math.max(0, initialLoadout);
 
             function fitSetupLabel() {
                 setupCategory.style.setProperty('--category-width', setupLabel.getBoundingClientRect().width + 'px');
@@ -88,6 +107,10 @@ const nowPlaying = document.getElementById('now-playing');
             }
 
             showSetupCategory();
+            if (initialLoadout >= 0) {
+                setSetupOpen(true);
+                if (!initialAppWindow && !location.search) initialLink.focus();
+            }
             setupCategory.addEventListener('click', (event) => {
                 if (event.detail) lastCategoryTapWidth = setupCategory.getBoundingClientRect().width;
                 selectedLoadout = (selectedLoadout + 1) % loadouts.length;
@@ -119,15 +142,12 @@ const nowPlaying = document.getElementById('now-playing');
                         return;
                     }
                     lastCategoryTapWidth = 0;
-                    setupContent.inert = isOpen;
-                    setupCategory.disabled = isOpen || loadouts.length < 2;
-                    if (isOpen) setupContent.style.height = '0px';
-                    else fitOpenSetup();
+                    setSetupOpen(!isOpen);
                 } else {
                     content.style.maxHeight = isOpen ? '0px' : content.scrollHeight + 'px';
+                    accordion.classList.toggle('open', !isOpen);
+                    trigger.setAttribute('aria-expanded', String(!isOpen));
                 }
-                accordion.classList.toggle('open', !isOpen);
-                trigger.setAttribute('aria-expanded', String(!isOpen));
 
                 if (window.uiSound) window.uiSound.play(isOpen ? 'collapse' : 'expand');
                 updateNowPlayingVisibility();
@@ -319,6 +339,14 @@ const nowPlaying = document.getElementById('now-playing');
 
         function openFeed(trigger, linkedPost = null) {
             if (!feedWindow) return;
+            pendingApp?.abort();
+            if (appWindow) {
+                const from = location.href;
+                removeAppWindow(true).then(() => {
+                    if (!appWindow && location.href === from) location.assign('/?feed=all');
+                });
+                return;
+            }
             if (window.uiSound) window.uiSound.play('pop');
             clearTimeout(feedHideTimer);
             feedReturnFocus = trigger || document.activeElement;
@@ -438,17 +466,187 @@ const nowPlaying = document.getElementById('now-playing');
             });
         });
 
-        /* Photo galleries scroll natively; clicking the photo peeking at the edge snaps it into view. */
-        document.querySelectorAll('.feed-post-gallery-track').forEach((track) => {
+        /* Galleries scroll natively. A click on the peeking slide or an arrow key advances one frame. */
+        function prepareGallery(track) {
+            const slides = Array.from(track.querySelectorAll('.feed-post-gallery-slide'));
+            const position = slide => slide.getBoundingClientRect().left - track.getBoundingClientRect().left
+                + track.scrollLeft - parseFloat(getComputedStyle(track).scrollPaddingLeft);
+            const goTo = slide => track.scrollTo({
+                left: position(slide),
+                behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'instant' : 'smooth'
+            });
             track.addEventListener('click', (event) => {
                 const slide = event.target.closest('.feed-post-gallery-slide');
-                if (!slide) return;
-                const inset = parseFloat(getComputedStyle(track).paddingLeft) || 0;
-                const left = slide.getBoundingClientRect().left - track.getBoundingClientRect().left + track.scrollLeft - inset;
-                if (Math.abs(left - track.scrollLeft) < 4) return;
-                track.scrollTo({ left, behavior: 'smooth' });
+                if (slide && Math.abs(position(slide) - track.scrollLeft) >= 4) goTo(slide);
             });
+            track.addEventListener('keydown', event => {
+                if (event.target !== track || !['ArrowLeft', 'ArrowRight'].includes(event.key) || !slides.length) return;
+                event.preventDefault();
+                const nearest = slides.reduce((a, b) =>
+                    Math.abs(position(a) - track.scrollLeft) < Math.abs(position(b) - track.scrollLeft) ? a : b);
+                const next = slides.indexOf(nearest) + (event.key === 'ArrowLeft' ? -1 : 1);
+                if (slides[next]) goTo(slides[next]);
+            });
+        }
+        feedWindow?.querySelectorAll('.feed-post-gallery-track').forEach(prepareGallery);
+
+        /* App links are standalone HTML pages. Ordinary clicks bring just their tray into this page,
+           preserving the current setup category, scroll position and other open accordions. */
+        let appWindow = initialAppWindow;
+        let pendingApp = null;
+        let appVideoObserver = null;
+        let appReturnFocus = Array.from(setupContent?.querySelectorAll('[data-app-link]') || [])
+            .find(link => link.dataset.appLink === initialApp);
+        const homepage = document.querySelector('.page-wrapper');
+        const pageHead = ['title', 'link[rel="canonical"]', 'meta[name="description"]',
+            ...['title', 'description', 'url', 'image'].map(name => `meta[property="og:${name}"]`)].map(selector => {
+            const element = document.head.querySelector(selector);
+            const property = element.localName === 'title' ? 'textContent' : element.localName === 'link' ? 'href' : 'content';
+            return { selector, element, property, home: element.dataset.home ?? element[property] };
         });
+
+        function updatePageHead(source) {
+            for (const {selector, element, property, home} of pageHead) {
+                element[property] = source ? source.querySelector(selector)[property] : home;
+            }
+        }
+
+        function syncAppLayout() {
+            const modal = Boolean(appWindow) && mobileBreakpoint.matches;
+            homepage.inert = modal;
+            appWindow?.setAttribute('aria-modal', String(modal));
+        }
+        mobileBreakpoint.addEventListener('change', syncAppLayout);
+
+        function prepareAppWindow() {
+            syncAppLayout();
+            appWindow.querySelectorAll('.feed-post-gallery-track').forEach(prepareGallery);
+            const videos = appWindow.querySelectorAll('video');
+            if (!videos.length) return;
+            const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)');
+            appVideoObserver = new IntersectionObserver(entries => {
+                for (const {target, intersectionRatio} of entries) {
+                    if (intersectionRatio < .5) target.pause();
+                    else if (!reduceMotion.matches) target.play().catch(() => {});
+                }
+            }, {root: appWindow.querySelector('.feed-scroll'), threshold: [0, .5]});
+            for (const video of videos) {
+                video.controls = true;
+                appVideoObserver.observe(video);
+            }
+        }
+
+        async function removeAppWindow(animate = false) {
+            const tray = appWindow;
+            if (!tray) return;
+            appVideoObserver?.disconnect();
+            appVideoObserver = null;
+            tray.querySelectorAll('video').forEach(video => video.pause());
+            tray.inert = true;
+            tray.classList.remove('open');
+            appWindow = null;
+            document.body.classList.remove('app-open');
+            syncAppLayout();
+            // The shared feed CSS determines whether this is a slide, a fade, or an instant close.
+            if (animate) {
+                const transitions = tray.getAnimations();
+                if (transitions.length) await Promise.allSettled(transitions.map(animation => animation.finished));
+            }
+            tray.remove();
+        }
+
+        function returnToSetup() {
+            pendingApp?.abort();
+            const finished = removeAppWindow(true);
+            updatePageHead();
+            if (appReturnFocus?.closest('[hidden],[inert]')) appReturnFocus = setupContent.closest('.accordion').querySelector('.accordion-trigger');
+            appReturnFocus?.focus({preventScroll: true});
+            return finished;
+        }
+
+        async function openAppLink(link) {
+            pendingApp?.abort();
+            if (appWindow?.dataset.appSlug === link.dataset.appLink) {
+                appWindow.querySelector('.app-close').focus();
+                return;
+            }
+            const request = new AbortController();
+            pendingApp = request;
+            try {
+                const response = await fetch(link.href, {signal: request.signal});
+                if (!response.ok) throw new Error('App page unavailable');
+                const template = document.createElement('template');
+                template.innerHTML = await response.text();
+                const tray = template.content.querySelector('#app-window');
+                if (tray?.dataset.appSlug !== link.dataset.appLink) throw new Error('App page unavailable');
+                if (request.signal.aborted) return;
+                if (document.body.classList.contains('feed-open')) closeFeed();
+                if (appWindow || location.pathname.startsWith('/apps/')) {
+                    // Switching apps reuses this tray's history entry, so Close still dismisses it.
+                    history.replaceState(history.state, '', link.href);
+                } else {
+                    // The browser may rebuild the previous document when Back follows a reload.
+                    history.replaceState({...history.state, setupApp: link.dataset.appLink}, '');
+                    history.pushState({fromAppLink: true}, '', link.href);
+                }
+                removeAppWindow();
+                document.querySelector('.app-window[inert]')?.remove();
+                appReturnFocus = link;
+                updatePageHead(template.content);
+                document.body.classList.add('app-open');
+                appWindow = tray;
+                feedWindow.after(tray);
+                prepareAppWindow();
+                tray.querySelector('.app-close').focus({preventScroll: true});
+            } catch {
+                if (!request.signal.aborted) location.assign(link.href);
+            } finally {
+                if (pendingApp === request) pendingApp = null;
+            }
+        }
+
+        document.addEventListener('click', event => {
+            if (event.defaultPrevented || event.button || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+            const link = event.target.closest('a[data-app-link], a.app-close');
+            if (!link) return;
+            if (link.hasAttribute('data-app-link')) {
+                event.preventDefault();
+                openAppLink(link);
+            } else if (appWindow) {
+                event.preventDefault();
+                const slug = appWindow.dataset.appSlug;
+                const finished = returnToSetup();
+                if (!history.state?.fromAppLink) {
+                    history.pushState({setupApp: slug}, '', link.href);
+                } else if (initialAppWindow) {
+                    // After a reload, Back may replace the whole document.
+                    const from = location.href;
+                    finished.then(() => {
+                        if (!appWindow && location.href === from) history.back();
+                    });
+                } else {
+                    history.back();
+                }
+            }
+        });
+        document.addEventListener('keydown', event => {
+            if (event.key === 'Escape' && appWindow && !document.fullscreenElement) appWindow.querySelector('.app-close').click();
+        });
+        window.addEventListener('pagehide', () => pendingApp?.abort());
+        window.addEventListener('pageshow', event => {
+            if (event.persisted && location.pathname.startsWith('/apps/') && !appWindow) location.reload();
+        });
+        window.addEventListener('popstate', () => {
+            pendingApp?.abort();
+            const slug = location.pathname.match(/^\/apps\/([^/]+)\/?$/)?.[1];
+            if (slug === appWindow?.dataset.appSlug) return;
+            if (slug) {
+                location.reload();
+                return;
+            }
+            returnToSetup();
+        });
+        if (appWindow) prepareAppWindow();
 
         function openFeedFromUrl() {
             const params = new URLSearchParams(window.location.search);
@@ -466,7 +664,7 @@ const nowPlaying = document.getElementById('now-playing');
             }), 340);
         }
 
-        openFeedFromUrl();
+        if (!appWindow) openFeedFromUrl();
 
         /* Last.fm Now Playing */
         (function() {

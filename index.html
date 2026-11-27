@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <base href="/">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Justin Martin | Springfield, MO</title>
@@ -32,9 +33,11 @@
         :focus-visible{outline:2px solid var(--accent);outline-offset:3px;border-radius:2px}
         .page{max-width:500px;margin:0;padding:30px 24px 48px 30px;margin-right:420px;display:flex;flex-direction:column;gap:32px}
         .bio{display:flex;flex-direction:column;gap:0}
-        .bio-greeting{font-size:36px;font-weight:400;letter-spacing:-.032em;line-height:1.2em;color:var(--text);margin-bottom:24px;text-wrap:balance}
-        .bio p{font-size:17px;font-weight:400;letter-spacing:-.016em;line-height:1.38em;color:var(--text-body);margin-bottom:20px;max-width:40ch;text-wrap:pretty}
-        .bio p:last-child{margin-bottom:0}
+        .bio-greeting,.app-title{font-size:36px;font-weight:400;letter-spacing:-.032em;line-height:1.2em;color:var(--text);margin-bottom:24px;text-wrap:balance}
+        .bio p,.app-body p,.app-link{font-size:17px;font-weight:400;letter-spacing:-.016em;line-height:1.38em;color:var(--text-body);text-wrap:pretty}
+        .bio p{max-width:40ch}
+        .bio p,.app-body p{margin-bottom:20px}
+        .bio p:last-child,.app-body p:last-child{margin-bottom:0}
         .bio a{color:var(--accent);text-decoration:underline;text-decoration-color:currentColor;text-decoration-thickness:1px;text-underline-offset:3px;transition:color .15s ease}
         .bio a:hover{color:rgba(0,0,0,.5)}
         .green{color:inherit}
@@ -68,6 +71,8 @@
         .accordion-inner p+p{margin-top:12px}
         .tag-list{display:grid;grid-template-columns:1fr 1fr;gap:4px 32px}
         .tag{display:block;padding:0;background:none;border:none;border-radius:0;font-size:14px;font-weight:400;color:var(--text-body);letter-spacing:-.012em;line-height:1.42em}
+        /* The full grid cell stays tappable. Keyboard focus follows the linked text. */
+        .setup-loadout a.tag:focus-visible{outline:none;text-decoration-style:double;text-decoration-thickness:2px;text-underline-offset:1px}
         .thoughts-list{display:flex;flex-direction:column;gap:16px}
         .thoughts-list li{list-style:none;position:relative;font-size:14px;font-weight:400;color:var(--text-body);letter-spacing:-.012em;line-height:1.38em;padding-left:12px}
         .thoughts-list li::before{content:"";position:absolute;left:0;top:.62em;width:4px;height:4px;border-radius:50%;background:rgba(0,0,0,.28)}
@@ -113,6 +118,18 @@
         .feed-post-gallery-track:focus-visible{outline:1px solid rgba(0,0,0,.3);outline-offset:4px;border-radius:10px}
         .feed-post-gallery-slide{flex:0 0 calc(100% - 36px);min-width:0;margin:0;overflow:hidden;background:#e8e8e4;border-radius:10px;scroll-snap-align:start;scroll-snap-stop:always}
         .feed-post-gallery-slide img{display:block;width:100%;aspect-ratio:4/3;object-fit:cover;border-radius:inherit;user-select:none;-webkit-user-drag:none}
+        .app-close{display:grid;place-items:center;text-decoration:none}
+        .app-content{padding-top:42px;overflow-wrap:anywhere}
+        .app-title{max-width:23ch}
+        .app-body p,.app-link{max-width:54ch}
+        .app-link{margin-top:clamp(30px,4vw,58px)}
+        .app-link a{color:var(--text);text-decoration:underline;text-decoration-thickness:1px;text-underline-offset:3px}
+        .app-content .feed-post-gallery{margin-top:22px}
+        .app-content .feed-post-gallery-slide{flex-basis:100%}
+        .app-content .feed-post-gallery-slide video{display:block;width:100%;aspect-ratio:4/3;object-fit:cover}
+        @media (min-width:1101px){
+            @starting-style{.app-window.open{transform:translateX(calc(100% + 60px))}}
+        }
         .feed-post-body{display:grid;grid-template-rows:0fr;opacity:0;transition:grid-template-rows .46s cubic-bezier(.22,1,.36,1),opacity .28s ease}
         .feed-post-body-inner{min-height:0;overflow:hidden}
         .feed-item--post.is-expanded .feed-post-body{grid-template-rows:1fr;opacity:1}
@@ -139,7 +156,7 @@
         .footer-mobile{display:none}
         .now-playing{position:fixed;bottom:30px;left:30px;color:var(--text-body);font-size:12px;line-height:1.6em;transition:opacity .3s ease;z-index:10}
         .now-playing.hidden,.footer.hidden{opacity:0!important;visibility:hidden;pointer-events:none}
-        body.feed-open .photo-main,body.feed-open .photo-caption,body.feed-open .footer-desktop{opacity:0;pointer-events:none}
+        body:is(.feed-open,.app-open) :is(.photo-main,.photo-caption,.footer-desktop){opacity:0;pointer-events:none}
         .fade-up{opacity:0;transform:translateY(14px);animation:fadeUp .55s cubic-bezier(.22,1,.36,1) forwards}
         @keyframes fadeUp{to{opacity:1;transform:translateY(0)}}
         @keyframes photoFade{from{opacity:0}to{opacity:1}}
@@ -152,6 +169,7 @@
             .setup-category:hover .setup-category-label{color:rgba(0,0,0,.5)}
             .feed-post-toggle:hover{color:#000}
             .feed-close:hover{opacity:.5}
+            .app-link a:hover{color:rgba(0,0,0,.5)}
         }
         @media (prefers-reduced-motion: reduce){.fade-up{animation:none;opacity:1;transform:none}*,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important}}
         @media (max-width:1100px){
@@ -160,8 +178,8 @@
             .page-wrapper{flex-direction:column}
             .photo-column{display:none!important}
             .page{--section-gap:42px;margin-right:0;padding:24px 24px env(safe-area-inset-bottom,0px);gap:var(--section-gap);max-width:500px}
-            .bio-greeting{font-size:36px;line-height:1.2em;letter-spacing:-.032em;margin-bottom:19px}
-            .bio p{font-size:17px;font-weight:400;letter-spacing:-.016em;line-height:1.38em;color:var(--text-body);max-width:40ch;margin-bottom:15px}
+            .bio-greeting,.app-title{margin-bottom:19px}
+            .bio p,.app-body p{margin-bottom:15px}
             .accordions{margin-top:0}
             .accordions:has(> .accordion.open:last-child){margin-bottom:var(--section-gap)}
             .accordion-title{margin-block:16px}
@@ -172,8 +190,10 @@
             .footer-desktop{display:none!important}
             .now-playing{display:none!important}
             .feed-window{width:100vw;max-width:none;height:100dvh;right:0;top:0;border:0;border-radius:0;box-shadow:none;opacity:0;transform:none;pointer-events:none;transition:opacity .22s ease}
-            body.feed-open .feed-window{opacity:1;pointer-events:auto;transition:none}
+            body.feed-open #feed-window,body.app-open .app-window{opacity:1;pointer-events:auto;transition:none}
             .feed-items{padding:0 24px 48px}
+            .app-content{padding-top:32px;padding-bottom:calc(32px + env(safe-area-inset-bottom,0px))}
+            body.app-open{overflow:hidden}
             .feed-item::after{left:-24px;right:-24px}
             .feed-post-title{font-size:30px}
             .feed-article-gallery{grid-template-columns:1fr}
@@ -383,8 +403,10 @@
         </div>
     </section>
 
+    <!-- cms:app-page --><!-- /cms:app-page -->
+
     <script src="/src/sounds.js" defer></script>
-    <script src="src/main.js?v=20261127-3" defer></script>
+    <script src="src/main.js?v=20261127-5" defer></script>
     <script>
         // Defer analytics until after load + idle to keep the main thread clear for LCP/TBT.
         (function(){
