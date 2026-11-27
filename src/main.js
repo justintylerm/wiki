@@ -81,7 +81,6 @@ const nowPlaying = document.getElementById('now-playing');
                 setupLabel.textContent = name;
                 fitSetupLabel();
                 if (loadouts.length > 1) {
-                    setupCategory.title = 'Next setup: ' + nextName;
                     setupCategory.setAttribute('aria-label', name + ', switch to ' + nextName + ' setup');
                 } else {
                     setupCategory.setAttribute('aria-disabled', 'true');
