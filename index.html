@@ -84,7 +84,8 @@
         .feed-window{position:fixed;z-index:900;right:30px;top:30px;width:clamp(560px,46vw,920px);max-width:calc(100vw - 60px);height:calc(100vh - 60px);background:var(--bg);border:1px solid var(--border);border-radius:10px;box-shadow:none;display:flex;flex-direction:column;overflow:hidden;opacity:1;transform:translateX(calc(100% + 60px));transition:transform .4s cubic-bezier(.22,1,.36,1)}
         .feed-window[hidden]{display:none}
         .feed-window.open{opacity:1;transform:none}
-        .feed-bar{height:58px;display:flex;align-items:center;justify-content:space-between;gap:20px;padding:0 20px;border-bottom:1px solid rgba(0,0,0,.08);background:var(--bg);user-select:none;flex-shrink:0}
+        .feed-window{--feed-bar-height:58px}
+        .feed-bar{height:var(--feed-bar-height);display:flex;align-items:center;justify-content:space-between;gap:20px;padding:0 20px;border-bottom:1px solid rgba(0,0,0,.08);background:var(--bg);user-select:none;flex-shrink:0}
         .feed-heading{font-size:13px;letter-spacing:-.012em;color:var(--text-body)}
         .feed-close{width:24px;height:24px;padding:0;border:0;background:none;color:var(--text-body);font-family:inherit;font-size:20px;font-weight:300;line-height:1;cursor:pointer;transition:opacity .2s ease}
         .feed-scroll{min-height:0;overflow-y:auto;overscroll-behavior:contain;-ms-overflow-style:none;scrollbar-width:none}
@@ -185,6 +186,15 @@
             .setup-category{align-self:stretch;box-sizing:content-box;border-inline:8px solid transparent;margin-inline:-8px;touch-action:manipulation}
             .feed-window{transition:none}
             .feed-close{width:44px;height:44px;margin-right:-10px}
+            .feed-scroll[aria-busy="true"]{opacity:0}
+            .feed-loader:not([hidden]){position:absolute;inset:var(--feed-bar-height) 0 0;display:grid;place-items:center;pointer-events:none;animation:feed-loader-appear .1s ease .12s both}
+            .feed-loader::after{content:"";width:18px;height:18px;border:1.5px solid var(--border);border-top-color:var(--text-body);border-radius:50%;animation:feed-loader-spin .8s linear infinite}
+            .feed-loader span{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%);white-space:nowrap}
+        }
+        @keyframes feed-loader-appear{from{opacity:0}to{opacity:1}}
+        @keyframes feed-loader-spin{to{transform:rotate(1turn)}}
+        @media (prefers-reduced-motion:reduce){
+            .feed-loader::after{animation:none}
         }
     </style>
 
@@ -337,6 +347,7 @@
             </div>
             <button class="feed-close" id="feed-close" type="button" aria-label="Close feed">&times;</button>
         </header>
+        <div class="feed-loader" id="feed-loader" role="status" hidden><span>Loading feed</span></div>
         <div class="feed-scroll" id="feed-scroll">
             <div class="feed-items"><!-- cms:feed -->
                 <article class="feed-item feed-item--status" data-feed-id="update-buek70">
@@ -368,7 +379,7 @@
     </section>
 
     <script src="/src/sounds.js" defer></script>
-    <script src="src/main.js?v=20261126-9" defer></script>
+    <script src="src/main.js?v=20261127-1" defer></script>
     <script>
         // Defer analytics until after load + idle to keep the main thread clear for LCP/TBT.
         (function(){

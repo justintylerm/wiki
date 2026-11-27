@@ -139,6 +139,7 @@ const nowPlaying = document.getElementById('now-playing');
 
         function handleBreakpointChange() {
             const isMobile = mobileBreakpoint.matches;
+            if (!isMobile || !coarsePointer.matches) finishFeedLoading?.();
             if (isMobile !== wasMobile) {
                 restartFadeUps();
                 if (isMobile) {
@@ -150,6 +151,7 @@ const nowPlaying = document.getElementById('now-playing');
         }
 
         mobileBreakpoint.addEventListener('change', handleBreakpointChange);
+        coarsePointer.addEventListener('change', handleBreakpointChange);
         window.addEventListener('resize', handleBreakpointChange);
         updateNowPlayingVisibility();
 
@@ -157,6 +159,8 @@ const nowPlaying = document.getElementById('now-playing');
         const feedWindow = document.getElementById('feed-window');
         const feedClose = document.getElementById('feed-close');
         const feedScroll = document.getElementById('feed-scroll');
+        const feedLoader = document.getElementById('feed-loader');
+        let finishFeedLoading = null;
         let feedReturnFocus = null;
         let feedHideTimer = null;
 
@@ -167,6 +171,61 @@ const nowPlaying = document.getElementById('now-playing');
         let feedVideoObserver = null;
 
         const youtubePlayers = feedWindow?.querySelectorAll('iframe.feed-youtube') || [];
+
+        function prepareMobileFeed() {
+            const viewport = feedScroll.getBoundingClientRect();
+            const pending = new Set(Array.from(feedScroll.querySelectorAll('img, video[data-src], iframe.feed-youtube')).filter(media => {
+                const box = media.getBoundingClientRect();
+                return !media.closest('[inert]') && box.width > 0 && box.bottom > viewport.top &&
+                    box.top < viewport.bottom && box.right > viewport.left && box.left < viewport.right;
+            }));
+            if (!pending.size) return;
+
+            const controller = new AbortController();
+            const options = { signal: controller.signal };
+            feedScroll.inert = true;
+            feedScroll.setAttribute('aria-busy', 'true');
+            feedLoader.hidden = false;
+
+            function reveal() {
+                if (controller.signal.aborted) return;
+                controller.abort();
+                clearTimeout(deadline);
+                feedScroll.inert = false;
+                feedScroll.removeAttribute('aria-busy');
+                feedLoader.hidden = true;
+                finishFeedLoading = null;
+            }
+            // A stalled third-party embed must not hold the rest of the feed indefinitely.
+            const deadline = setTimeout(reveal, 4000);
+            finishFeedLoading = reveal;
+
+            for (const media of pending) {
+                const ready = () => {
+                    pending.delete(media);
+                    if (!pending.size) reveal();
+                };
+                if (media instanceof HTMLImageElement) {
+                    media.loading = 'eager';
+                    media.decode().then(ready, ready);
+                } else if (media instanceof HTMLVideoElement) {
+                    media.preload = 'auto';
+                    if (media.hasAttribute('src') && media.readyState >= HTMLMediaElement.HAVE_CURRENT_DATA) ready();
+                    else {
+                        media.addEventListener('loadeddata', ready, options);
+                        media.addEventListener('canplay', ready, options);
+                        media.addEventListener('error', ready, options);
+                    }
+                } else {
+                    media.loading = 'eager';
+                    media.addEventListener('load', () => {
+                        // Removing src on close also fires a load for about:blank.
+                        if (media.hasAttribute('src') && media.contentDocument?.URL !== 'about:blank') ready();
+                    }, options);
+                    media.addEventListener('error', ready, options);
+                }
+            }
+        }
 
         function playFeedVideo(video) {
             video.muted = true;
@@ -209,7 +268,7 @@ const nowPlaying = document.getElementById('now-playing');
             });
         }
 
-        function openFeed(trigger) {
+        function openFeed(trigger, linkedPost = null) {
             if (!feedWindow) return;
             if (window.uiSound) window.uiSound.play('pop');
             clearTimeout(feedHideTimer);
@@ -220,6 +279,13 @@ const nowPlaying = document.getElementById('now-playing');
 
             feedWindow.hidden = false;
             if (feedScroll) feedScroll.scrollTop = 0;
+            if (mobileBreakpoint.matches && coarsePointer.matches) {
+                if (linkedPost) {
+                    setPostExpanded(linkedPost, true, { updateUrl: false, sound: false });
+                    feedScroll.scrollTop = Math.max(0, linkedPost.offsetTop - 18);
+                }
+                prepareMobileFeed();
+            }
             wakeFeedVideos();
 
             requestAnimationFrame(() => {
@@ -231,6 +297,7 @@ const nowPlaying = document.getElementById('now-playing');
 
         function closeFeed() {
             if (!feedWindow || feedWindow.hidden) return;
+            finishFeedLoading?.();
             closeExpandedPosts(true);
             sleepFeedVideos();
             if (window.uiSound) window.uiSound.play('slide');
@@ -338,11 +405,10 @@ const nowPlaying = document.getElementById('now-playing');
             const slug = params.get('post');
             if (!slug && !params.has('feed')) return;
             const trigger = document.querySelector('[aria-controls="accordion-mind"]');
-            openFeed(trigger);
-            if (!slug) return;
-            const article = Array.from(document.querySelectorAll('.feed-item--post'))
+            const article = slug && Array.from(document.querySelectorAll('.feed-item--post'))
                 .find((item) => item.dataset.postSlug === slug);
-            if (!article) return;
+            openFeed(trigger, article);
+            if (!article || (mobileBreakpoint.matches && coarsePointer.matches)) return;
             setTimeout(() => setPostExpanded(article, true, {
                 updateUrl: false,
                 sound: false,
