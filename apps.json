@@ -6,9 +6,8 @@
     "version": "v1.0.2",
     "heading": "Plott is a note-taking app for moving ideas around.",
     "body": [
-      "Yep. Another Markdown note-taking app (I know). I built Plott in my never-ending quest to fill my software stack with tools that fit the way I work. It takes its cues from the simplicity of Apple Notes and the Markdown malleability of Obsidian. It's my go-to for my personal knowledge system, daily task lists, and agent documentation.",
-      "Under the hood, it's got all the tried-and-true formatting tools you've come to expect from an app like this. Toggle on grid mode, though, and a static Markdown note becomes a freeform, multi-column beast. Drag and drop content around the canvas to try out different layouts at the speed of thought for a truly unique experience I haven't been able to get out of other apps of this caliber.",
-      "Forever a work in progress. Always tinkering for the fun of the game."
+      "Think Apple Notes and Obsidian had a baby. Plott has all the tried-and-true formatting tools you’ve come to expect from an app like this.",
+      "Toggle on grid mode, though, and a static Markdown note becomes a freeform, multi-column beast. Drag and drop content around the canvas to iterate on ideas quickly for a truly unique experience."
     ],
     "linkLabel": "Try it on GitHub",
     "linkUrl": "/assets/posts/markdown-app-demo.webm",
